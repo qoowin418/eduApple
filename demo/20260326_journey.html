@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>上海步行旅遊地圖 v0.1</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        #map { height: 100vh; width: 100vw; }
+        
+        .custom-popup b { color: #d32f2f; font-size: 16px; }
+        .custom-popup p { margin: 5px 0 0; color: #555; }
+        
+        /* 定位按鈕樣式 */
+        .locate-btn {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+<div class="locate-btn" onclick="locateUser()">📍</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    // 1. 初始化地圖 (設定在上海南京東路附近)
+    const map = L.map('map', {
+        center: [31.238, 121.485],
+        zoom: 15,
+        zoomControl: false // 手機版建議隱藏，靠手勢縮放
+    });
+
+    // 2. 載入地圖瓦片 (OSM)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // 3. 定義標籤圖示
+    const foodIcon = L.divIcon({html: '🍜', className: 'dummy', iconSize: [30, 30]});
+    const spotIcon = L.divIcon({html: '🏛️', className: 'dummy', iconSize: [30, 30]});
+
+    // 4. 特色推薦資料 (步行範圍：外灘/南京東路/豫園)
+    const locations = [
+        { name: "外灘觀景台", lat: 31.240, lng: 121.491, type: "spot", desc: "欣賞東方明珠與萬國建築博覽群。" },
+        { name: "豫園/城隍廟", lat: 31.227, lng: 121.492, type: "spot", desc: "經典江南園林與傳統市集。" },
+        { name: "和平飯店", lat: 31.241, lng: 121.486, type: "spot", desc: "傳奇老飯店，裝飾藝術風格巔峰。" },
+        { name: "南翔饅頭店", lat: 31.228, lng: 121.491, type: "food", desc: "必吃的小籠包老字號。" },
+        { name: "大壺春", lat: 31.235, lng: 121.486, type: "food", desc: "米其林推薦的生煎包。" }
+    ];
+
+    // 5. 渲染標記點
+    locations.forEach(loc => {
+        const marker = L.marker([loc.lat, loc.lng], {
+            icon: loc.type === "food" ? foodIcon : spotIcon
+        }).addTo(map);
+        
+        marker.bindPopup(`
+            <div class="custom-popup">
+                <b>${loc.name}</b>
+                <p>${loc.desc}</p>
+            </div>
+        `);
+    });
+
+    // 6. GPS 定位功能
+    function locateUser() {
+        map.locate({setView: true, maxZoom: 16});
+    }
+
+    map.on('locationfound', function(e) {
+        L.circle(e.latlng, e.accuracy / 2).addTo(map);
+        L.marker(e.latlng).addTo(map).bindPopup("你在這裡").openPopup();
+    });
+
+    map.on('locationerror', function() {
+        alert("無法讀取 GPS 資訊，請檢查權限設定。");
+    });
+</script>
+
+</body>
+</html>
