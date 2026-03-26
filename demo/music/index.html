@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>電路虛擬實驗室 v0.1</title>
+    <style>
+        :root { --panel-bg: #2c3e50; --accent: #f1c40f; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #ecf0f1; font-family: system-ui, -apple-system, sans-serif; touch-action: none; }
+        
+        #toolbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--panel-bg); padding: 10px 20px; border-radius: 50px; display: flex; gap: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 100; pointer-events: auto; }
+        .tool-item { width: 50px; height: 50px; background: #34495e; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; font-size: 12px; text-align: center; border: 2px solid transparent; transition: 0.2s; }
+        .tool-item:hover { border-color: var(--accent); }
+        
+        #info-panel { position: absolute; top: 20px; left: 20px; background: rgba(255,255,255,0.9); padding: 15px; border-radius: 10px; border-left: 5px solid var(--panel-bg); pointer-events: none; }
+        
+        canvas { display: block; width: 100vw; height: 100vh; }
+        
+        .status-msg { position: absolute; top: 20px; right: 20px; padding: 10px 20px; border-radius: 5px; font-weight: bold; display: none; }
+        .warning { background: #e74c3c; color: white; display: block; animation: blink 0.5s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div id="info-panel">
+    <h3 style="margin:0">電路實驗室 v0.1</h3>
+    <p id="meter">點擊組件查看數據</p>
+</div>
+
+<div id="status" class="status-msg">⚠️ 短路警告！</div>
+
+<div id="toolbar">
+    <div class="tool-item" onclick="addComponent('battery')">電池</div>
+    <div class="tool-item" onclick="addComponent('bulb')">燈泡</div>
+    <div class="tool-item" onclick="addComponent('motor')">馬達</div>
+    <div class="tool-item" onclick="clearCanvas()">清除</div>
+</div>
+
+<canvas id="circuitCanvas"></canvas>
+
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+    const meterTxt = document.getElementById('meter');
+    const statusMsg = document.getElementById('status');
+
+    let components = [];
+    let isDragging = false;
+    let selectedComp = null;
+    let offset = { x: 0, y: 0 };
+    let camera = { x: 0, y: 0, zoom: 1 };
+
+    class Component {
+        constructor(type, x, y) {
+            this.type = type;
+            this.x = x; this.y = y;
+            this.w = 80; this.h = 50;
+            this.connected = false;
+            this.value = (type === 'battery') ? 9 : 10; // 9V 或 10歐姆
+            this.current = 0;
+            this.angle = 0; // 用於馬達轉動動畫
+        }
+
+        draw() {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            
+            // 繪製組件主體
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#34495e';
+            ctx.fillStyle = this.getFillColor();
+            ctx.strokeRect(-this.w/2, -this.h/2, this.w, this.h);
+            ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h);
+
+            // 繪製接點
+            ctx.fillStyle = '#7f8c8d';
+            ctx.beginPath(); ctx.arc(-this.w/2, 0, 5, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.w/2, 0, 5, 0, Math.PI*2); ctx.fill();
+
+            // 特殊視覺效果
+            if(this.type === 'bulb' && this.current > 0) {
+                ctx.shadowBlur = this.current * 10;
+                ctx.shadowColor = "yellow";
+                ctx.fillStyle = "#f1c40f";
+                ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI*2); ctx.fill();
+            }
+
+            if(this.type === 'motor') {
+                ctx.translate(0,0);
+                ctx.rotate(this.angle);
+                ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.moveTo(-15,0); ctx.lineTo(15,0); ctx.stroke();
+                if(this.current > 0) this.angle += this.current * 0.5;
+            }
+
+            ctx.restore();
+        }
+
+        getFillColor() {
+            if(this.type === 'battery') return '#e67e22';
+            if(this.type === 'bulb') return '#f39c12';
+            if(this.type === 'motor') return '#95a5a6';
+            return '#fff';
+        }
+    }
+
+    function addComponent(type) {
+        components.push(new Component(type, window.innerWidth/2 / camera.zoom - camera.x, window.innerHeight/2 / camera.zoom - camera.y));
+    }
+
+    function clearCanvas() { components = []; statusMsg.classList.remove('warning'); }
+
+    function updatePhysics() {
+        let hasBattery = components.some(c => c.type === 'battery');
+        let hasLoad = components.some(c => c.type === 'bulb' || c.type === 'motor');
+        
+        // 簡易邏輯：目前只要畫面上有電池與載體就視為串聯通路 (v0.1 簡化版)
+        if(hasBattery && hasLoad) {
+            statusMsg.classList.remove('warning');
+            components.forEach(c => {
+                if(c.type !== 'battery') c.current = 0.9; // 模擬電流
+            });
+        } else if (hasBattery && !hasLoad && components.length > 1) {
+            statusMsg.classList.add('warning');
+            components.forEach(c => c.current = 0);
+        } else {
+            statusMsg.classList.remove('warning');
+            components.forEach(c => c.current = 0);
+        }
+    }
+
+    function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        ctx.translate(camera.x, camera.y);
+        ctx.scale(camera.zoom, camera.zoom);
+
+        // 畫導線 (簡化版：自動連接相鄰組件)
+        if(components.length > 1) {
+            ctx.beginPath();
+            ctx.strokeStyle = '#2c3e50';
+            ctx.lineWidth = 4;
+            for(let i=0; i<components.length-1; i++) {
+                ctx.moveTo(components[i].x, components[i].y);
+                ctx.lineTo(components[i+1].x, components[i+1].y);
+            }
+            ctx.stroke();
+        }
+
+        components.forEach(c => c.draw());
+        ctx.restore();
+        updatePhysics();
+        requestAnimationFrame(render);
+    }
+
+    // 互動控制
+    canvas.addEventListener('mousedown', e => {
+        const mouseX = (e.clientX - camera.x) / camera.zoom;
+        const mouseY = (e.clientY - camera.y) / camera.zoom;
+        selectedComp = components.find(c => Math.abs(c.x - mouseX) < c.w/2 && Math.abs(c.y - mouseY) < c.h/2);
+        if(selectedComp) {
+            isDragging = true;
+            meterTxt.innerText = `${selectedComp.type === 'battery' ? '電壓: 9V' : '電流: ' + selectedComp.current.toFixed(2) + 'A'}`;
+        }
+    });
+
+    window.addEventListener('mousemove', e => {
+        if(isDragging && selectedComp) {
+            selectedComp.x = (e.clientX - camera.x) / camera.zoom;
+            selectedComp.y = (e.clientY - camera.y) / camera.zoom;
+        }
+    });
+
+    window.addEventListener('mouseup', () => isDragging = false);
+
+    // 縮放與適應
+    window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+    window.dispatchEvent(new Event('resize'));
+    render();
+
+</script>
+</body>
+</html>
