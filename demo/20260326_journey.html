@@ -1,98 +1,139 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>上海步行旅遊地圖 v0.1</title>
+    <title>上海旅遊地圖 v0.2 - 步行與軌道交通版</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
-        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        #map { height: 100vh; width: 100vw; }
+        :root { --primary-color: #2c3e50; --accent-color: #e74c3c; }
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+        #map { height: 100vh; width: 100vw; background: #f0f0f0; }
         
-        .custom-popup b { color: #d32f2f; font-size: 16px; }
-        .custom-popup p { margin: 5px 0 0; color: #555; }
-        
-        /* 定位按鈕樣式 */
+        /* 自定義 UI 介面 */
+        .map-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            max-width: 200px;
+        }
+        .v-tag { font-size: 10px; color: #888; display: block; margin-top: 5px; }
+
+        /* 定位按鈕 */
         .locate-btn {
             position: absolute;
-            bottom: 20px;
+            bottom: 30px;
             right: 20px;
             z-index: 1000;
             background: white;
-            padding: 10px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            cursor: pointer;
-            width: 40px;
-            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            font-size: 24px;
+            cursor: pointer;
+            border: none;
         }
+
+        /* 標籤氣泡樣式 */
+        .popup-card b { color: var(--accent-color); font-size: 1.1em; }
+        .type-tag { font-size: 0.8em; background: #eee; padding: 2px 6px; border-radius: 4px; color: #666; }
     </style>
 </head>
 <body>
 
+<div class="map-overlay">
+    <h3 style="margin:0; font-size: 16px;">上海旅遊指南</h3>
+    <p style="font-size: 12px; margin: 5px 0;">含景點、美食及軌道路網</p>
+    <span class="v-tag">版本號: v0.2 (Stable)</span>
+</div>
+
 <div id="map"></div>
-<div class="locate-btn" onclick="locateUser()">📍</div>
+<button class="locate-btn" onclick="locateMe()" title="我的位置">🎯</button>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-    // 1. 初始化地圖 (設定在上海南京東路附近)
+    // 1. 初始化地圖
     const map = L.map('map', {
-        center: [31.238, 121.485],
-        zoom: 15,
-        zoomControl: false // 手機版建議隱藏，靠手勢縮放
+        center: [31.2304, 121.4737],
+        zoom: 13,
+        zoomControl: false,
+        tap: true // 支援手機點選
     });
 
-    // 2. 載入地圖瓦片 (OSM)
+    // 2. 載入地圖瓦片 (離線建議：此處可替換為本地瓦片路徑)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
+        attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    // 3. 定義標籤圖示
-    const foodIcon = L.divIcon({html: '🍜', className: 'dummy', iconSize: [30, 30]});
-    const spotIcon = L.divIcon({html: '🏛️', className: 'dummy', iconSize: [30, 30]});
-
-    // 4. 特色推薦資料 (步行範圍：外灘/南京東路/豫園)
-    const locations = [
-        { name: "外灘觀景台", lat: 31.240, lng: 121.491, type: "spot", desc: "欣賞東方明珠與萬國建築博覽群。" },
-        { name: "豫園/城隍廟", lat: 31.227, lng: 121.492, type: "spot", desc: "經典江南園林與傳統市集。" },
-        { name: "和平飯店", lat: 31.241, lng: 121.486, type: "spot", desc: "傳奇老飯店，裝飾藝術風格巔峰。" },
-        { name: "南翔饅頭店", lat: 31.228, lng: 121.491, type: "food", desc: "必吃的小籠包老字號。" },
-        { name: "大壺春", lat: 31.235, lng: 121.486, type: "food", desc: "米其林推薦的生煎包。" }
+    // 3. 數據定義
+    const spots = [
+        { name: "外灘", pos: [31.2406, 121.4907], type: "景點", info: "萬國建築博覽群，看浦東夜景最佳處。" },
+        { name: "豫園", pos: [31.2272, 121.4921], type: "景點", info: "明代江南園林，鄰近城隍廟小吃街。" },
+        { name: "武康大樓", pos: [31.2041, 121.4355], type: "景點", info: "網紅打卡點，經典船型建築。" }
     ];
 
-    // 5. 渲染標記點
-    locations.forEach(loc => {
-        const marker = L.marker([loc.lat, loc.lng], {
-            icon: loc.type === "food" ? foodIcon : spotIcon
-        }).addTo(map);
-        
-        marker.bindPopup(`
-            <div class="custom-popup">
-                <b>${loc.name}</b>
-                <p>${loc.desc}</p>
-            </div>
-        `);
-    });
+    const foods = [
+        { name: "佳家湯包", pos: [31.2335, 121.4725], type: "美食", info: "黃河路名店，蟹粉鮮肉小籠極具特色。" },
+        { name: "大壺春 (四川中路)", pos: [31.2365, 121.4857], type: "美食", info: "傳統無湯底生煎包，外皮酥脆。" }
+    ];
 
-    // 6. GPS 定位功能
-    function locateUser() {
-        map.locate({setView: true, maxZoom: 16});
+    const transport = [
+        { name: "上海火車站", pos: [31.2492, 121.4553], type: "鐵路", info: "主要鐵路樞紐。" },
+        { name: "上海虹橋站", pos: [31.1940, 121.3200], type: "高鐵", info: "高鐵與機場綜合交通樞紐。" }
+    ];
+
+    // 4. 繪製軌道交通線路 (示例：2號線與10號線部分路段)
+    const line2 = [
+        [31.2155, 121.3384], [31.2268, 121.4475], [31.2331, 121.4752], [31.2393, 121.4996]
+    ];
+    L.polyline(line2, {color: '#81bd41', weight: 5, opacity: 0.7}).addTo(map).bindTooltip("地鐵 2 號線");
+
+    const line10 = [
+        [31.2251, 121.4925], [31.2312, 121.4811], [31.2361, 121.4731], [31.2144, 121.4423]
+    ];
+    L.polyline(line10, {color: '#c7afd3', weight: 5, opacity: 0.7}).addTo(map).bindTooltip("地鐵 10 號線");
+
+    // 5. 加入標記點函數
+    function addMarkers(data, iconText) {
+        data.forEach(item => {
+            const icon = L.divIcon({
+                html: `<div style="font-size:24px;">${iconText}</div>`,
+                className: 'custom-icon',
+                iconSize: [30, 30]
+            });
+            L.marker(item.pos, {icon: icon}).addTo(map)
+                .bindPopup(`<div class="popup-card"><span class="type-tag">${item.type}</span><br><b>${item.name}</b><p>${item.info}</p></div>`);
+        });
+    }
+
+    addMarkers(spots, "🏛️");
+    addMarkers(foods, "🥟");
+    addMarkers(transport, "🚄");
+
+    // 6. GPS 定位
+    function locateMe() {
+        map.locate({setView: true, maxZoom: 16, enableHighAccuracy: true});
     }
 
     map.on('locationfound', function(e) {
-        L.circle(e.latlng, e.accuracy / 2).addTo(map);
-        L.marker(e.latlng).addTo(map).bindPopup("你在這裡").openPopup();
+        L.circle(e.latlng, e.accuracy).addTo(map);
+        L.marker(e.latlng).addTo(map).bindPopup("你目前的位置").openPopup();
     });
 
     map.on('locationerror', function() {
-        alert("無法讀取 GPS 資訊，請檢查權限設定。");
+        alert("定位失敗，請確保已開啟 GPS 並授權瀏覽器位置存取權限。");
     });
 </script>
 
