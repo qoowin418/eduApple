@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>即時監測系統 v0.1</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+    <style>
+        :root {
+            --primary-bg: #121212;
+            --card-bg: #1e1e1e;
+            --accent-color: #00e5ff;
+            --alarm-color: #ff5252;
+            --text-color: #ffffff;
+        }
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            background: var(--primary-bg);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            overflow: hidden; touch-action: none;
+        }
+        #app-container {
+            display: flex; flex-direction: column;
+            width: 100%; height: 100%;
+        }
+        /* 儀表板 */
+        #dashboard {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            background: var(--card-bg);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+        .info-box {
+            border: 1px solid #333;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .value { font-size: 1.2rem; font-weight: bold; color: var(--accent-color); display: block; }
+        .label { font-size: 0.8rem; color: #888; }
+
+        /* 互動畫布區 */
+        #viewport {
+            flex-grow: 1;
+            position: relative;
+            background: #252525;
+            overflow: hidden;
+            cursor: grab;
+        }
+        #content-layer {
+            position: absolute;
+            width: 200px; height: 200px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            display: flex; align-items: center; text-align: center;
+            justify-content: center;
+            color: #000; font-weight: bold;
+            transform-origin: center center;
+        }
+
+        /* 控制區 */
+        #controls {
+            padding: 15px;
+            background: var(--card-bg);
+            border-top: 1px solid #333;
+        }
+        input[type="number"] {
+            background: #333; border: 1px solid var(--accent-color);
+            color: white; padding: 5px; border-radius: 4px; width: 60px;
+        }
+        .alarm-active { animation: blink 0.5s infinite; }
+        @keyframes blink { 0% { background: var(--alarm-color); } 50% { background: var(--card-bg); } }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <div id="dashboard">
+        <div class="info-box">
+            <span class="label">手機模擬溫度</span>
+            <span id="temp-display" class="value">-- °C</span>
+        </div>
+        <div class="info-box">
+            <span class="label">GPS 位置</span>
+            <span id="gps-display" class="value" style="font-size: 0.7rem;">等待定位...</span>
+        </div>
+    </div>
+
+    <div id="viewport">
+        <div id="content-layer">拖曳/縮放我</div>
+    </div>
+
+    <div id="controls">
+        <label>警報門檻 (°C): </label>
+        <input type="number" id="temp-limit" value="40">
+        <div id="status-msg" style="font-size: 0.8rem; margin-top: 5px;">狀態: 正常</div>
+    </div>
+</div>
+
+<script>
+    // --- 1. 初始化變數 ---
+    let currentTemp = 35.0;
+    const tempDisplay = document.getElementById('temp-display');
+    const gpsDisplay = document.getElementById('gps-display');
+    const tempLimitInput = document.getElementById('temp-limit');
+    const statusMsg = document.getElementById('status-msg');
+    const content = document.getElementById('content-layer');
+    const viewport = document.getElementById('viewport');
+
+    let scale = 1, lastScale = 1;
+    let posX = 0, posY = 0, lastPosX = 0, lastPosY = 0;
+
+    // --- 2. GPS 功能 ---
+    function updateGPS() {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.watchPosition(pos => {
+                gpsDisplay.innerText = `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
+            }, err => {
+                gpsDisplay.innerText = "無法獲取位置";
+            });
+        }
+    }
+
+    // --- 3. 模擬溫度與警報 ---
+    // 提醒：瀏覽器無法獲取真實硬體溫度，此處為模擬邏輯
+    function updateTemp() {
+        currentTemp = (30 + Math.random() * 15).toFixed(1);
+        tempDisplay.innerText = `${currentTemp} °C`;
+        
+        const limit = parseFloat(tempLimitInput.value);
+        if (currentTemp > limit) {
+            statusMsg.innerText = "警告：溫度過高！";
+            statusMsg.classList.add('alarm-active');
+            playAlarm();
+        } else {
+            statusMsg.innerText = "狀態: 正常";
+            statusMsg.classList.remove('alarm-active');
+        }
+    }
+
+    function playAlarm() {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.1);
+    }
+
+    // --- 4. 互動操作 (Hammer.js) ---
+    const hammer = new Hammer(viewport);
+    hammer.get('pinch').set({ enable: true });
+
+    hammer.on('pan', (ev) => {
+        posX = lastPosX + ev.deltaX;
+        posY = lastPosY + ev.deltaY;
+        applyTransform();
+    });
+
+    hammer.on('panend', () => {
+        lastPosX = posX;
+        lastPosY = posY;
+    });
+
+    hammer.on('pinch', (ev) => {
+        scale = lastScale * ev.scale;
+        applyTransform();
+    });
+
+    hammer.on('pinchend', () => {
+        lastScale = scale;
+    });
+
+    // 滑鼠滾輪支援
+    viewport.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? 0.9 : 1.1;
+        scale *= delta;
+        applyTransform();
+    }, { passive: false });
+
+    function applyTransform() {
+        content.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
+    }
+
+    // 啟動
+    updateGPS();
+    setInterval(updateTemp, 2000);
+</script>
+</body>
+</html>
