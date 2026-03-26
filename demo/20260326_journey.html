@@ -1,33 +1,36 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>上海互動地圖 v0.3</title>
+    <title>台灣旅遊地圖 v0.4 - 全島路網版</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
-        :root { --panel-bg: rgba(255, 255, 255, 0.95); }
-        body, html { margin: 0; padding: 0; height: 100%; font-family: sans-serif; }
-        #map { height: 100vh; width: 100vw; }
+        :root { --panel-bg: rgba(255, 255, 255, 0.95); --primary-blue: #003399; --hsr-orange: #f58220; }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; }
+        #map { height: 100vh; width: 100vw; background: #e0f2f1; }
 
-        /* 控制面板 */
+        /* UI 控制面板 */
         .control-panel {
             position: absolute;
-            top: 10px;
-            right: 10px;
+            top: 15px;
+            right: 15px;
             z-index: 1000;
             background: var(--panel-bg);
-            padding: 15px;
+            padding: 12px;
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-            max-width: 180px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            width: 160px;
         }
-        .control-panel h4 { margin: 0 0 10px 0; font-size: 14px; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
-        .control-item { margin-bottom: 10px; }
-        .control-item label { font-size: 12px; display: block; margin-bottom: 5px; color: #666; }
-        select { width: 100%; padding: 5px; border-radius: 4px; border: 1px solid #ccc; }
+        .control-panel h4 { margin: 0 0 10px 0; font-size: 14px; color: #333; text-align: center; }
+        .control-item { margin-bottom: 12px; }
+        .control-item label { font-size: 11px; color: #666; display: block; margin-bottom: 4px; }
+        select { width: 100%; padding: 6px; border-radius: 6px; border: 1px solid #ddd; font-size: 13px; }
+
+        .legend { font-size: 10px; line-height: 1.5; color: #444; margin-top: 8px; border-top: 1px solid #eee; padding-top: 5px; }
+        .legend span { display: inline-block; width: 25px; height: 3px; margin-right: 5px; vertical-align: middle; }
 
         /* 定位按鈕 */
         .gps-btn {
@@ -36,21 +39,32 @@
             right: 20px;
             z-index: 1000;
             background: #fff;
-            width: 50px;
-            height: 50px;
+            width: 55px;
+            height: 55px;
             border-radius: 50%;
             border: none;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            font-size: 24px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            font-size: 26px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
         }
-        .gps-btn:active { background: #f0f0f0; }
 
-        /* 版本標籤 */
-        .version-tag { position: absolute; bottom: 5px; left: 5px; z-index: 1000; font-size: 10px; color: #999; pointer-events: none; }
+        .version-badge {
+            position: absolute;
+            bottom: 5px;
+            left: 10px;
+            z-index: 1000;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+        }
+
+        /* 標記樣式 */
+        .marker-label { background: none; border: none; font-size: 24px; text-shadow: 2px 2px 2px white; }
     </style>
 </head>
 <body>
@@ -58,116 +72,107 @@
 <div id="map"></div>
 
 <div class="control-panel">
-    <h4>地圖設定 (v0.3)</h4>
+    <h4>地圖設定</h4>
     <div class="control-item">
         <label>交通線路粗細</label>
-        <select id="lineWidthSelect" onchange="updateLineWeight(this.value)">
+        <select id="widthSelect" onchange="changeWeight(this.value)">
             <option value="2">細 (2px)</option>
             <option value="4" selected>標準 (4px)</option>
-            <option value="6">粗 (6px)</option>
-            <option value="10">極粗 (10px)</option>
+            <option value="7">粗 (7px)</option>
+            <option value="12">特粗 (12px)</option>
         </select>
     </div>
-    <div style="font-size: 11px; color: #e74c3c;">🔴 鐵路 | 🟢 2號線 | 🟣 10號線</div>
+    <div class="legend">
+        <div><span style="background:var(--hsr-orange)"></span>高鐵 HSR</div>
+        <div><span style="background:var(--primary-blue)"></span>台鐵 TRA</div>
+        <div><span style="background:#00bb00)"></span>捷運 MRT</div>
+    </div>
 </div>
 
-<button class="gps-btn" onclick="locateUser()">🎯</button>
-<div class="version-tag">SH_MAP_V0.3_STABLE</div>
+<button class="gps-btn" onclick="locateMe()" title="我的位置">🛰️</button>
+<div class="version-badge">v0.4 Stable | 台灣全島</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-    // 1. 初始化地圖
+    // 1. 初始化地圖 (中心設在台灣中部)
     const map = L.map('map', {
-        center: [31.2304, 121.4737],
-        zoom: 12,
+        center: [23.8, 121.0],
+        zoom: 8,
         zoomControl: false
     });
 
-    // 2. 底圖載入 (支援緩存)
+    // 2. 底圖載入 (OpenStreetMap)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OSM'
+        attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    // 3. 定義線路容器
-    let transportLines = [];
-
-    // 線路數據
-    const railData = [
-        { name: "京滬高鐵/鐵路", color: "#E30013", coords: [[31.2492, 121.4553], [31.2510, 121.4000], [31.1940, 121.3200]] },
-        { name: "地鐵 2 號線", color: "#82C341", coords: [[31.2155, 121.3384], [31.2268, 121.4475], [31.2331, 121.4752], [31.2393, 121.4996], [31.2350, 121.5300]] },
-        { name: "地鐵 10 號線", color: "#C7AFD3", coords: [[31.1940, 121.3200], [31.2144, 121.4423], [31.2312, 121.4811], [31.2251, 121.4925], [31.2650, 121.5100]] }
+    // 3. 交通線路資料
+    let currentLayers = [];
+    const transportData = [
+        // 高鐵 (西部骨幹)
+        { name: "台灣高鐵", color: "#f58220", coords: [[25.047, 121.517], [25.013, 121.462], [24.912, 121.241], [24.808, 121.040], [24.593, 120.825], [24.111, 120.615], [23.987, 120.575], [23.649, 120.433], [23.457, 120.323], [22.992, 120.285], [22.688, 120.331]] },
+        // 台鐵 (環島主線簡略示意)
+        { name: "台灣鐵路環島線", color: "#003399", coords: [[25.047, 121.517], [25.132, 121.740], [24.839, 121.823], [24.753, 121.761], [23.978, 121.611], [22.756, 121.144], [22.012, 120.748], [22.612, 120.302], [22.997, 120.202], [23.480, 120.441], [24.143, 120.684], [25.047, 121.517]] },
+        // 北捷藍線示意
+        { name: "台北捷運板南線", color: "#0070bd", coords: [[25.006, 121.460], [25.042, 121.508], [25.041, 121.543], [25.053, 121.617]] }
     ];
 
-    // 繪製線路函數
-    function drawLines(weight) {
-        // 先清除舊線路
-        transportLines.forEach(line => map.removeLayer(line));
-        transportLines = [];
-
-        railData.forEach(item => {
-            const poly = L.polyline(item.coords, {
-                color: item.color,
+    function drawTransport(weight) {
+        currentLayers.forEach(l => map.removeLayer(l));
+        currentLayers = [];
+        
+        transportData.forEach(path => {
+            const line = L.polyline(path.coords, {
+                color: path.color,
                 weight: weight,
                 opacity: 0.8,
-                lineJoin: 'round'
-            }).addTo(map).bindTooltip(item.name);
-            transportLines.push(poly);
+                lineCap: 'round'
+            }).addTo(map).bindTooltip(path.name);
+            currentLayers.push(line);
         });
     }
 
     // 初始繪製
-    drawLines(4);
+    drawTransport(4);
 
-    // 更新線路粗細
-    function updateLineWeight(val) {
-        drawLines(parseInt(val));
+    function changeWeight(w) {
+        drawTransport(parseInt(w));
     }
 
-    // 4. 特色標記
-    const spots = [
-        { name: "外灘觀景區", pos: [31.2406, 121.4907], icon: "🏛️", desc: "必看浦江夜景" },
-        { name: "豫園古色風情", pos: [31.2272, 121.4921], icon: "🏮", desc: "傳統建築與市集" },
-        { name: "南京東路步行街", pos: [31.2345, 121.4740], icon: "🛍️", desc: "繁華商業核心" }
+    // 4. 特色美食與景點
+    const pois = [
+        { name: "台北101", pos: [25.033, 121.564], icon: "🏙️", type: "景點", desc: "台灣最具代表性的摩天大樓。" },
+        { name: "阿里山森林鐵路", pos: [23.510, 120.801], icon: "🚂", type: "景點", desc: "世界級的高山森林鐵路。" },
+        { name: "太魯閣國家公園", pos: [24.159, 121.621], icon: "⛰️", type: "景點", desc: "壯麗的大理石峽谷景觀。" },
+        { name: "墾丁南灣", pos: [21.958, 120.763], icon: "🏖️", type: "景點", desc: "南台灣最受歡迎的沙灘。" },
+        { name: "鼎泰豐(總店)", pos: [25.033, 121.529], icon: "🥟", type: "美食", desc: "聞名世界的黃金18摺小籠包。" },
+        { name: "逢甲夜市", pos: [24.178, 120.645], icon: "🍢", type: "美食", desc: "創意小吃的發源地。" },
+        { name: "度小月擔仔麵", pos: [22.994, 120.201], icon: "🍜", type: "美食", desc: "台南府城百年經典老味道。" }
     ];
 
-    const foods = [
-        { name: "南翔小籠(豫園)", pos: [31.2280, 121.4915], icon: "🥟", desc: "皮薄多汁經典" },
-        { name: "大壺春生煎", pos: [31.2365, 121.4857], icon: "🍳", desc: "地道滬式生煎" }
-    ];
-
-    function addCustomMarkers(data, typeColor) {
-        data.forEach(item => {
-            const icon = L.divIcon({
-                html: `<div style="font-size:24px; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));">${item.icon}</div>`,
-                className: 'marker-icon',
-                iconSize: [30, 30]
-            });
-            L.marker(item.pos, {icon: icon}).addTo(map)
-                .bindPopup(`<strong>${item.name}</strong><br>${item.desc}`);
+    pois.forEach(p => {
+        const customIcon = L.divIcon({
+            html: `<div>${p.icon}</div>`,
+            className: 'marker-label',
+            iconSize: [30, 30]
         });
-    }
+        L.marker(p.pos, {icon: customIcon}).addTo(map)
+            .bindPopup(`<strong>${p.name}</strong> [${p.type}]<br>${p.desc}`);
+    });
 
-    addCustomMarkers(spots);
-    addCustomMarkers(foods);
-
-    // 5. GPS 定位邏輯
-    let userMarker, userCircle;
-
-    function locateUser() {
-        map.locate({setView: true, maxZoom: 15, enableHighAccuracy: true});
+    // 5. GPS 定位
+    function locateMe() {
+        map.locate({setView: true, maxZoom: 15});
     }
 
     map.on('locationfound', function(e) {
-        if (userMarker) map.removeLayer(userMarker);
-        if (userCircle) map.removeLayer(userCircle);
-
-        userCircle = L.circle(e.latlng, e.accuracy).addTo(map);
-        userMarker = L.marker(e.latlng).addTo(map).bindPopup("您的當前位置").openPopup();
+        L.circle(e.latlng, e.accuracy).addTo(map);
+        L.marker(e.latlng).addTo(map).bindPopup("你現在在這裡").openPopup();
     });
 
     map.on('locationerror', function() {
-        alert("無法讀取 GPS，請確認手機已開啟定位並允許瀏覽器存取。");
+        alert("無法讀取 GPS 權限，請確認手機定位已開啟。");
     });
 </script>
 
