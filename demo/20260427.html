@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>互動風景模擬器 - 高海拔高度修正版</title>
+    <style>
+        body { margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; background: #2c3e50; font-family: "Microsoft JhengHei", sans-serif; color: white; overflow: hidden; }
+        h1 { margin: 10px 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); font-size: 24px; }
+        #simulator-container {
+            position: relative;
+            width: 1000px;
+            height: 562px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            border-radius: 12px;
+            overflow: hidden;
+            background: url('images/20260427.png') no-repeat center center;
+            background-size: cover;
+        }
+        canvas { position: absolute; top: 0; left: 0; cursor: crosshair; }
+        #control-panel {
+            margin-top: 15px;
+            width: 980px;
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            padding: 15px;
+            border-radius: 10px;
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        #start-btn {
+            height: 100%;
+            background-color: #2980b9;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        #start-btn.active { background-color: #27ae60; }
+        .sliders-container { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 25px; }
+        .slider-group { display: flex; align-items: center; }
+        .slider-group label { width: 140px; font-weight: bold; font-size: 0.85em; color: #2c3e50;}
+        input[type=range] { flex-grow: 1; cursor: pointer; }
+        .val-display { width: 35px; text-align: right; font-family: monospace; font-size: 0.9em; margin-left: 8px; color: #2980b9; font-weight: bold;}
+    </style>
+</head>
+<body>
+
+    <h1>🌧️ 互動氣象教室：高海拔降雨模擬</h1>
+
+    <div id="simulator-container">
+        <canvas id="particleCanvas" width="1000" height="562"></canvas>
+    </div>
+
+    <div id="control-panel">
+        <button id="start-btn">按下開始選擇區域</button>
+        <div class="sliders-container">
+            <div class="slider-group">
+                <label>1. 上升速度 (Vapor)</label>
+                <input type="range" id="vaporSpeed" min="0.5" max="5.0" step="0.1" value="2.2">
+                <span class="val-display" id="vaporSpeedVal">2.2</span>
+            </div>
+            <div class="slider-group">
+                <label>2. 冷卻高度 (Height)</label>
+                <input type="range" id="coolingHeight" min="50" max="550" step="10" value="400">
+                <span class="val-display" id="coolingHeightVal">400</span>
+            </div>
+            <div class="slider-group">
+                <label>3. 凝結速度 (Condense)</label>
+                <input type="range" id="condenseSpeed" min="0.1" max="3.0" step="0.1" value="1.0">
+                <span class="val-display" id="condenseSpeedVal">1.0</span>
+            </div>
+            <div class="slider-group">
+                <label>4. 降雨速度 (Rain)</label>
+                <input type="range" id="rainSpeed" min="2.0" max="15.0" step="0.5" value="7.5">
+                <span class="val-display" id="rainSpeedVal">7.5</span>
+            </div>
+            <div class="slider-group">
+                <label>5. 擴散速度 (Spread)</label>
+                <input type="range" id="spreadSpeed" min="0.0" max="5.0" step="0.1" value="1.5">
+                <span class="val-display" id="spreadSpeedVal">1.5</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+        const startBtn = document.getElementById('start-btn');
+        const CANVAS_HEIGHT = 562;
+        let isSelectionMode = false;
+        let isDrawing = false;
+        let mousePos = { x: 0, y: 0 };
+        let particles = [];
+
+        let params = {
+            vaporSpeed: 2.2,
+            coolingHeight: 400,
+            condenseSpeed: 1.0,
+            rainSpeed: 7.5,
+            spreadSpeed: 1.5
+        };
+
+        ['vaporSpeed', 'coolingHeight', 'condenseSpeed', 'rainSpeed', 'spreadSpeed'].forEach(id => {
+            document.getElementById(id).addEventListener('input', (e) => {
+                params[id] = parseFloat(e.target.value);
+                document.getElementById(id + 'Val').innerText = params[id].toFixed(id === 'coolingHeight' ? 0 : 1);
+            });
+        });
+
+        startBtn.addEventListener('click', () => {
+            isSelectionMode = !isSelectionMode;
+            startBtn.classList.toggle('active', isSelectionMode);
+            startBtn.innerText = isSelectionMode ? '滑鼠按住產生霧氣' : '按下開始選擇區域';
+        });
+
+        canvas.addEventListener('mousedown', (e) => { if(isSelectionMode) isDrawing = true; updateMousePos(e); });
+        window.addEventListener('mouseup', () => { isDrawing = false; });
+        canvas.addEventListener('mousemove', (e) => { updateMousePos(e); });
+
+        function updateMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            mousePos.x = e.clientX - rect.left;
+            mousePos.y = e.clientY - rect.top;
+        }
+
+        class Particle {
+            constructor(startX, startY) {
+                // 水蒸氣產生區域稍微放大，更有團狀感
+                const spawnRadius = 45; 
+                const angle = Math.random() * Math.PI * 2;
+                const radius = Math.random() * spawnRadius;
+                this.x = startX + Math.cos(angle) * radius;
+                this.y = startY + Math.sin(angle) * radius;
+                
+                this.baseSize = 4 + Math.random() * 4;
+                this.size = this.baseSize;
+                this.state = 0; 
+                this.opacity = 0.12;
+                this.vx = (Math.random() - 0.5) * 1.2;
+                this.growth = 0;
+
+                this.floatOffset = Math.random() * Math.PI * 2;
+                this.floatSpeed = 0.015 + Math.random() * 0.02;
+                this.floatRange = 10 + Math.random() * 15;
+                this.driftDir = (Math.random() - 0.5) * 2;
+            }
+
+            update() {
+                if (this.state === 0) {
+                    this.y -= params.vaporSpeed;
+                    this.x += this.vx;
+                    // 冷卻高度邏輯修正：座標越小越高
+                    if (this.y < (CANVAS_HEIGHT - params.coolingHeight)) {
+                        this.state = 1;
+                        this.targetY = this.y;
+                    }
+                } else if (this.state === 1) {
+                    this.growth += 0.007 * params.condenseSpeed;
+                    this.size += 0.04 * params.condenseSpeed;
+                    this.opacity = Math.min(0.8, this.opacity + 0.01);
+                    
+                    this.x += this.driftDir * (params.spreadSpeed * 0.5);
+                    this.floatOffset += this.floatSpeed;
+                    // 在高空微調波動
+                    this.y = this.targetY + Math.sin(this.floatOffset) * this.floatRange + (this.growth * 10);
+
+                    if (this.growth > 1.35) {
+                        this.state = 2;
+                        this.vy = params.rainSpeed + (this.size / 4); 
+                    }
+                } else if (this.state === 2) {
+                    this.y += this.vy;
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                if (this.state < 2) {
+                    const color = this.state === 0 ? `rgba(220, 240, 255, ${this.opacity})` : `rgba(255, 255, 255, ${this.opacity})`;
+                    ctx.fillStyle = color;
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                } else {
+                    ctx.fillStyle = `rgba(180, 225, 255, 0.75)`;
+                    ctx.ellipse(this.x, this.y, this.size / 6, this.size * 1.8, 0, 0, Math.PI * 2);
+                }
+                ctx.fill();
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (isDrawing) {
+                // 增加每幀產生的數量，讓霧氣更厚實
+                for(let i=0; i<7; i++) particles.push(new Particle(mousePos.x, mousePos.y));
+            }
+
+            particles = particles.filter(p => {
+                p.update();
+                p.draw();
+                return p.y > -150 && p.y < canvas.height + 150;
+            });
+
+            if (particles.length > 3200) particles.splice(0, 25);
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
