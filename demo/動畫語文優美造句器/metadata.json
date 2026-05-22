@@ -1,6 +1,0 @@
-{
-  "name": "動畫語文優美造句器",
-  "description": "依據動畫主題與詞語，為國小學生生成充滿畫面感、修辭優美且語氣溫柔的句子。",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
