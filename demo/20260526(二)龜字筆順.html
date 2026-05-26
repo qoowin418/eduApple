@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>龜字筆順大冒險</title>
+    <style>
+        :root {
+            --primary: #4e9a06;
+            --secondary: #73d216;
+            --accent: #f57900;
+            --bg-color: #f3f8f2;
+            --grid-color: #edd400;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Helvetica Neue', Arial, 'Noto Sans TC', sans-serif;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: #2e3436;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        h1 {
+            margin: 5px 0;
+            color: var(--primary);
+            font-size: 28px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #555753;
+            margin-bottom: 10px;
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
+            padding: 10px;
+        }
+
+        /* 填字米字格區域 */
+        .canvas-container {
+            position: relative;
+            width: 360px;
+            height: 360px;
+            background-color: #ffffff;
+            border: 8px solid #c0a080;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+
+        /* 米字格背景線 */
+        .mi-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .mi-line {
+            position: absolute;
+            stroke: var(--grid-color);
+            stroke-width: 1.5;
+            stroke-dasharray: 4 4;
+            opacity: 0.6;
+        }
+
+        .mi-border-cross {
+            position: absolute;
+            stroke: var(--grid-color);
+            stroke-width: 2;
+            opacity: 0.4;
+        }
+
+        /* 繪圖與互動層 */
+        #strokeSvg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+        }
+
+        /* 已完成筆畫與參考底字 */
+        #bgStrokes path {
+            transition: stroke 0.3s;
+        }
+
+        /* 角色與起終點標示 */
+        .marker {
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            transform: translate(-15px, -15px);
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+        }
+
+        .start-marker {
+            background-color: #3465a4;
+            color: white;
+            border: 2px solid #ffffff;
+            cursor: pointer;
+            animation: pulse 1.5s infinite;
+        }
+
+        .cute-animal {
+            width: 45px;
+            height: 45px;
+            position: absolute;
+            transform: translate(-22px, -22px);
+            z-index: 11;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        @keyframes pulse {
+            0% { transform: translate(-15px, -15px) scale(1); box-shadow: 0 0 0 0 rgba(52, 101, 164, 0.7); }
+            70% { transform: translate(-15px, -15px) scale(1.15); box-shadow: 0 0 0 10px rgba(52, 101, 164, 0); }
+            100% { transform: translate(-15px, -15px) scale(1); box-shadow: 0 0 0 0 rgba(52, 101, 164, 0); }
+        }
+
+        /* 控制面板 */
+        .control-panel {
+            margin-top: 20px;
+            background: #ffffff;
+            padding: 15px 20px;
+            border-radius: 30px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        button {
+            background-color: #ffffff;
+            border: 2px solid #d3d7cf;
+            color: #2e3436;
+            padding: 8px 16px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: var(--secondary);
+            color: white;
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        button.primary-btn {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* 狀態與訊息列 */
+        .status-bar {
+            margin-top: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #4e9a06;
+            height: 24px;
+            text-align: center;
+        }
+
+        .info-panel {
+            margin-top: 10px;
+            background-color: #eef4ec;
+            border-left: 5px solid var(--primary);
+            padding: 10px 15px;
+            border-radius: 0 10px 10px 0;
+            font-size: 14px;
+            color: #2e3436;
+            width: 100%;
+            line-height: 1.5;
+        }
+
+        /* 勝利慶祝動畫 */
+        .success-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.85);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .success-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .success-title {
+            font-size: 32px;
+            color: var(--accent);
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .party-animal {
+            font-size: 50px;
+            animation: bounce 0.6s infinite alternate;
+        }
+
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-20px); }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🐢 龜字筆順大冒險 🐢</h1>
+        <div class="subtitle">根據標準字體精密校對版：沿著藍點寫完，送小可愛回家吧！</div>
+    </header>
+
+    <div class="main-container">
+        <div class="canvas-container" id="canvasContainer">
+            <svg class="mi-grid">
+                <line x1="0" y1="0" x2="360" y2="360" class="mi-line"></line>
+                <line x1="360" y1="0" x2="0" y2="360" class="mi-line"></line>
+                <line x1="180" y1="0" x2="180" y2="360" class="mi-border-cross"></line>
+                <line x1="0" y1="180" x2="360" y2="180" class="mi-border-cross"></line>
+            </svg>
+
+            <svg id="strokeSvg">
+                <g id="bgStrokes" opacity="0.12" fill="none" stroke="#2e3436" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"></g>
+                <g id="doneStrokes" fill="none" stroke="#4e9a06" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"></g>
+                <path id="guideTrack" fill="none" stroke="#729fcf" stroke-width="16" stroke-linecap="round" opacity="0.3" stroke-dasharray="4 6"></path>
+                <path id="userTrack" fill="none" stroke="#ef2929" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+
+            <div id="interactiveElements"></div>
+
+            <div class="success-overlay" id="successOverlay">
+                <div class="party-animal">🎉🐱🐶🐰🦊🐻🎉</div>
+                <div class="success-title">完美通關！筆順完全正確！</div>
+                <button class="primary-btn" onclick="resetAdventure()">再玩一次 🔄</button>
+            </div>
+        </div>
+
+        <div class="status-bar" id="statusBar">準備冒險！請點擊藍色起點開始</div>
+
+        <div class="control-panel">
+            <button id="prevBtn" onclick="stepPrevious()">⏮ 上一步</button>
+            <button id="demoBtn" onclick="playCurrentDemo()">▶ 播放示範</button>
+            <button id="nextBtn" onclick="stepNext()">跳過此步 ⏭</button>
+            <button id="resetBtn" onclick="resetAdventure()">重來 🔄</button>
+        </div>
+
+        <div class="info-panel" id="infoPanel">
+            <strong>💡 當前筆畫提示：</strong><span id="strokeInstruction">加載中...</span>
+        </div>
+    </div>
+
+    <script>
+        // 依據使用者提供的標準圖檔，完美校對的 16 筆畫精確坐標數據
+        const strokeData = [
+            { id: 1, name: "撇", points: [[150, 25], [82, 92]], info: "第 1 筆：從最上方正中往左下寫一小撇（龜頭冠部）", animal: "🐱" },
+            { id: 2, name: "橫折", points: [[142, 60], [210, 42], [140, 95]], info: "第 2 筆：橫折，構成冠部下方的折線", animal: "🐶" },
+            { id: 3, name: "豎", points: [[91, 102], [110, 142]], info: "第 3 筆：中間偏左下，畫一條短短的垂直豎", animal: "🐰" },
+            { id: 4, name: "橫折", points: [[110, 107], [252, 90], [230, 128]], info: "第 4 筆：橫折，做出中間圍欄框的右上角", animal: "🦊" },
+            { id: 5, name: "橫", points: [[114, 137], [165, 133]], info: "第 5 筆：在中間左側補上一小橫線", animal: "🐻" },
+            { id: 6, name: "橫", points: [[203, 128], [252, 125]], info: "第 6 筆：在中間右側補上一小橫線", animal: "🦁" },
+            { id: 7, name: "豎", points: [[188, 107], [188, 250]], info: "第 7 筆：右半部中間，垂直向下直立劃一長豎", animal: "🐸" },
+            { id: 8, name: "豎折長豎外殼", points: [[145, 110], [145, 275], [168, 305], [250, 308], [300, 292], [298, 245]], info: "第 8 筆：【關鍵大筆畫】從中間偏左長豎直下、順著底部往右繞大彎，最後往右上拉起（龜殼底與尾巴）", animal: "🐵" },
+            { id: 9, name: "橫折", points: [[79, 163], [130, 153], [120, 192]], info: "第 9 筆：左側上方第一個側龜甲裂紋，橫折進去", animal: "🐷" },
+            { id: 10, name: "橫折", points: [[62, 183], [260, 155], [240, 252]], info: "第 10 筆：【橫跨長畫】從最左邊橫切過去、再向右下折出右側大裙邊", animal: "🐧" },
+            { id: 11, name: "橫", points: [[82, 203], [122, 198]], info: "第 11 筆：左側上方與中間夾縫處的短橫線", animal: "🐨" },
+            { id: 12, name: "橫折", points: [[79, 230], [132, 218], [122, 255]], info: "第 12 筆：左側下方第二個側龜甲裂紋，橫折進去", animal: "🐥" },
+            { id: 13, name: "橫", points: [[58, 255], [240, 235]], info: "第 13 筆：【底部橫跨】從左下一直橫切貫穿到右側包圍外框", animal: "🦉" },
+            { id: 14, name: "橫", points: [[82, 275], [130, 271]], info: "第 14 筆：左下角最後一個底部的短橫線", animal: "🦇" },
+            { id: 15, name: "撇 (乂右半)", points: [[235, 175], [202, 235]], info: "第 15 筆：右下方內部「乂」字結構，先寫往左下的短撇", animal: " hamster" },
+            { id: 16, name: "捺 (乂左半)", points: [[207, 180], [245, 230]], info: "第 16 筆：最後一筆！從左上往右下捺一筆交叉，大功告成！", animal: "🐢" }
+        ];
+
+        let currentStep = 0;
+        const svg = document.getElementById('strokeSvg');
+        const bgStrokesG = document.getElementById('bgStrokes');
+        const doneStrokesG = document.getElementById('doneStrokes');
+        const guideTrack = document.getElementById('guideTrack');
+        const userTrack = document.getElementById('userTrack');
+        const interactiveElements = document.getElementById('interactiveElements');
+        const statusBar = document.getElementById('statusBar');
+        const strokeInstruction = document.getElementById('strokeInstruction');
+        const successOverlay = document.getElementById('successOverlay');
+
+        let isDrawing = false;
+        let totalStrokes = strokeData.length;
+
+        function init() {
+            bgStrokesG.innerHTML = '';
+            strokeData.forEach(stroke => {
+                bgStrokesG.appendChild(createSvgPath(stroke.points));
+            });
+            renderCurrentStep();
+        }
+
+        function getPathD(points) {
+            if (points.length === 0) return '';
+            let d = `M ${points[0][0]} ${points[0][1]}`;
+            for (let i = 1; i < points.length; i++) {
+                d += ` L ${points[i][0]} ${points[i][1]}`;
+            }
+            return d;
+        }
+
+        function createSvgPath(points) {
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', getPathD(points));
+            return path;
+        }
+
+        function renderCurrentStep() {
+            interactiveElements.innerHTML = '';
+            userTrack.setAttribute('d', '');
+            
+            if (currentStep >= totalStrokes) {
+                statusBar.innerText = "太完美了！全部筆順正確通關！";
+                successOverlay.classList.add('show');
+                return;
+            }
+
+            successOverlay.classList.remove('show');
+            const stroke = strokeData[currentStep];
+            
+            statusBar.innerText = `第 ${stroke.id} / ${totalStrokes} 筆：${stroke.name}`;
+            strokeInstruction.innerText = stroke.info;
+
+            doneStrokesG.innerHTML = '';
+            for (let i = 0; i < currentStep; i++) {
+                doneStrokesG.appendChild(createSvgPath(strokeData[i].points));
+            }
+
+            guideTrack.setAttribute('d', getPathD(stroke.points));
+
+            const startPt = stroke.points[0];
+            const endPt = stroke.points[stroke.points.length - 1];
+
+            const startDiv = document.createElement('div');
+            startDiv.className = 'marker start-marker';
+            startDiv.style.left = `${startPt[0]}px`;
+            startDiv.style.top = `${startPt[1]}px`;
+            startDiv.innerText = stroke.id;
+            interactiveElements.appendChild(startDiv);
+
+            const animalDiv = document.createElement('div');
+            animalDiv.className = 'cute-animal';
+            animalDiv.style.left = `${endPt[0]}px`;
+            animalDiv.style.top = `${endPt[1]}px`;
+            animalDiv.style.fontSize = '32px';
+            animalDiv.innerText = stroke.animal;
+            interactiveElements.appendChild(animalDiv);
+
+            setupTracking(startPt, endPt);
+            updateButtons();
+        }
+
+        function setupTracking(startPt, endPt) {
+            const container = document.getElementById('canvasContainer');
+            
+            container.onmousedown = null;
+            window.onmousemove = null;
+            window.onmouseup = null;
+            container.ontouchstart = null;
+            container.ontouchmove = null;
+            container.ontouchend = null;
+
+            let userPoints = [];
+            let startTriggered = false;
+
+            function onStart(x, y) {
+                const rect = container.getBoundingClientRect();
+                const clickX = x - rect.left;
+                const clickY = y - rect.top;
+
+                const distToStart = Math.hypot(clickX - startPt[0], clickY - startPt[1]);
+                if (distToStart < 35) {
+                    isDrawing = true;
+                    startTriggered = true;
+                    userPoints = [[clickX, clickY]];
+                    userTrack.setAttribute('d', getPathD(userPoints));
+                    statusBar.innerText = "抓到起點！滑向小可愛吧！";
+                }
+            }
+
+            function onMove(x, y) {
+                if (!isDrawing || !startTriggered) return;
+                const rect = container.getBoundingClientRect();
+                const curX = x - rect.left;
+                const curY = y - rect.top;
+
+                userPoints.push([curX, curY]);
+                userTrack.setAttribute('d', getPathD(userPoints));
+
+                const distToEnd = Math.hypot(curX - endPt[0], curY - endPt[1]);
+                if (distToEnd < 30) {
+                    validateAndPass();
+                }
+            }
+
+            function onEnd() {
+                if (!isDrawing) return;
+                isDrawing = false;
+                if (startTriggered) {
+                    userTrack.setAttribute('d', '');
+                    statusBar.innerText = "手滑開了！重新從藍色起點連到小可愛吧！";
+                }
+                startTriggered = false;
+            }
+
+            container.onmousedown = e => onStart(e.clientX, e.clientY);
+            window.onmousemove = e => { if(isDrawing) onMove(e.clientX, e.clientY); };
+            window.onmouseup = onEnd;
+
+            container.ontouchstart = e => {
+                const t = e.touches[0];
+                onStart(t.clientX, t.clientY);
+                e.preventDefault();
+            };
+            container.ontouchmove = e => {
+                if(!isDrawing) return;
+                const t = e.touches[0];
+                onMove(t.clientX, t.clientY);
+                e.preventDefault();
+            };
+            container.ontouchend = onEnd;
+        }
+
+        function validateAndPass() {
+            isDrawing = false;
+            const animal = document.querySelector('.cute-animal');
+            if (animal) {
+                animal.style.transform = 'translate(-22px, -22px) scale(1.8)';
+            }
+
+            statusBar.innerText = "捕獲成功！太棒了！👏";
+            
+            setTimeout(() => {
+                currentStep++;
+                renderCurrentStep();
+            }, 300);
+        }
+
+        function playCurrentDemo() {
+            if (currentStep >= totalStrokes) return;
+            const stroke = strokeData[currentStep];
+            guideTrack.style.transition = 'none';
+            
+            const pathLength = guideTrack.getTotalLength();
+            guideTrack.style.strokeDasharray = pathLength;
+            guideTrack.style.strokeDashoffset = pathLength;
+            
+            guideTrack.getBoundingClientRect();
+            
+            guideTrack.style.transition = 'stroke-dashoffset 0.8s ease-in-out';
+            guideTrack.style.strokeDashoffset = '0';
+            guideTrack.setAttribute('stroke', '#ef2929');
+            guideTrack.style.opacity = '0.8';
+
+            const animal = document.querySelector('.cute-animal');
+            const startPt = stroke.points[0];
+            const endPt = stroke.points[stroke.points.length - 1];
+            
+            if (animal) {
+                animal.style.left = `${startPt[0]}px`;
+                animal.style.top = `${startPt[1]}px`;
+                setTimeout(() => {
+                    animal.style.left = `${endPt[0]}px`;
+                    animal.style.top = `${endPt[1]}px`;
+                }, 50);
+            }
+
+            setTimeout(() => {
+                guideTrack.style.transition = 'none';
+                guideTrack.style.strokeDasharray = '4 6';
+                guideTrack.setAttribute('stroke', '#729fcf');
+                guideTrack.style.opacity = '0.3';
+                renderCurrentStep();
+            }, 900);
+        }
+
+        function updateButtons() {
+            document.getElementById('prevBtn').disabled = (currentStep === 0);
+            document.getElementById('nextBtn').disabled = (currentStep >= totalStrokes);
+        }
+
+        function stepPrevious() {
+            if (currentStep > 0) {
+                currentStep--;
+                renderCurrentStep();
+            }
+        }
+
+        function stepNext() {
+            if (currentStep < totalStrokes) {
+                currentStep++;
+                renderCurrentStep();
+            }
+        }
+
+        function resetAdventure() {
+            currentStep = 0;
+            renderCurrentStep();
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
