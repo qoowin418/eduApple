@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>五下自然科學：變因大挑戰！</title>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #8BC34A;
+            --bg-color: #f1f8e9;
+            --card-bg: #ffffff;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: "Microsoft JhengHei", sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #2e7d32;
+            margin-bottom: 5px;
+        }
+
+        .intro {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            background: #e8f5e9;
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 2px dashed #81c784;
+            text-align: center;
+        }
+
+        .mission {
+            font-weight: bold;
+            color: #d32f2f;
+        }
+
+        .container {
+            display: flex;
+            gap: 30px;
+            max-width: 1000px;
+            width: 100%;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .group-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 20px;
+            width: 280px;
+            text-align: center;
+            border: 3px solid transparent;
+            transition: transform 0.2s;
+        }
+
+        .group-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .group-A { border-color: #ff9800; }
+        .group-B { border-color: #2196f3; }
+
+        .group-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .group-title.A { color: #ff9800; }
+        .group-title.B { color: #2196f3; }
+
+        .control-item {
+            background: #f9f9f9;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .icon-img {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+        }
+
+        select {
+            font-size: 1rem;
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+        }
+
+        .btn-container {
+            margin-top: 30px;
+            text-align: center;
+            width: 100%;
+        }
+
+        button {
+            font-size: 1.3rem;
+            font-weight: bold;
+            padding: 12px 40px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background-color: #388e3c;
+            transform: scale(1.05);
+        }
+
+        /* 彈窗/結果顯示 */
+        .result-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 100;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 99;
+        }
+
+        .result-images {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+
+        .result-box {
+            border: 2px dashed #ccc;
+            padding: 10px;
+            border-radius: 10px;
+            width: 40%;
+        }
+
+        .result-box img {
+            width: 100%;
+            height: 120px;
+            object-fit: contain;
+        }
+
+        .feedback-text {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            color: white;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 2px;
+        }
+        .badge-op { background-color: #e91e63; }
+        .badge-ctrl { background-color: #9c27b0; }
+
+        .close-btn {
+            background: #555;
+            padding: 8px 20px;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🌱 綠豆發芽變因大挑戰！</h1>
+    <div class="intro">
+        小朋友，小明想做實驗研究：<span class="mission">「陽光」到底會不會影響綠豆發芽呢？</span><br>
+        請幫小明調整 A 組與 B 組的環境，並按下「開始實驗」看看對不對吧！
+    </div>
+
+    <div class="container">
+        <div class="group-card group-A">
+            <div class="group-title A">實驗 A 組</div>
+            
+            <div class="control-item">
+                <img id="img-light-A" src="images/sun_on.png" alt="陽光" class="icon-img">
+                <div>
+                    <label>陽光：</label>
+                    <select id="light-A" onchange="updateIcons()">
+                        <option value="true" selected>☀️ 曬太陽</option>
+                        <option value="false">🌑 蓋黑紙</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="control-item">
+                <img id="img-water-A" src="images/water_on.png" alt="水分" class="icon-img">
+                <div>
+                    <label>水分：</label>
+                    <select id="water-A" onchange="updateIcons()">
+                        <option value="true" selected>💧 有澆水</option>
+                        <option value="false">❌ 不澆水</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="group-card group-B">
+            <div class="group-title B">實驗 B 組</div>
+            
+            <div class="control-item">
+                <img id="img-light-B" src="images/sun_off.png" alt="陽光" class="icon-img">
+                <div>
+                    <label>陽光：</label>
+                    <select id="light-B" onchange="updateIcons()">
+                        <option value="true">☀️ 曬太陽</option>
+                        <option value="false" selected>🌑 蓋黑紙</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="control-item">
+                <img id="img-water-B" src="images/water_on.png" alt="水分" class="icon-img">
+                <div>
+                    <label>水分：</label>
+                    <select id="water-B" onchange="updateIcons()">
+                        <option value="true" selected>💧 有澆水</option>
+                        <option value="false">❌ 不澆水</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="btn-container">
+        <button onclick="runExperiment()">🚀 開始實驗！</button>
+    </div>
+
+    <div class="modal-overlay" id="overlay"></div>
+    <div class="result-modal" id="resultModal">
+        <h2>🔬 實驗結果出來囉！</h2>
+        
+        <div class="result-images">
+            <div class="result-box">
+                <div>A 組成果</div>
+                <img id="res-img-A" src="images/result_grow.png" alt="A結果">
+            </div>
+            <div class="result-box">
+                <div>B 組成果</div>
+                <img id="res-img-B" src="images/result_grow.png" alt="B結果">
+            </div>
+        </div>
+
+        <div class="feedback-text" id="feedback">
+            </div>
+
+        <button class="close-btn" onclick="closeModal()">再試一次 🔄</button>
+    </div>
+
+    <script>
+        // 動態根據選擇切換小圖示
+        function updateIcons() {
+            // A組圖示
+            document.getElementById('img-light-A').src = document.getElementById('light-A').value === 'true' ? 'images/sun_on.png' : 'images/sun_off.png';
+            document.getElementById('img-water-A').src = document.getElementById('water-A').value === 'true' ? 'images/water_on.png' : 'images/water_off.png';
+            
+            // B組圖示
+            document.getElementById('img-light-B').src = document.getElementById('light-B').value === 'true' ? 'images/sun_on.png' : 'images/sun_off.png';
+            document.getElementById('img-water-B').src = document.getElementById('water-B').value === 'true' ? 'images/water_on.png' : 'images/water_off.png';
+        }
+
+        // 核心邏輯判斷
+        function runExperiment() {
+            // 讀取當前設定 (字串轉布林)
+            const lightA = document.getElementById('light-A').value === 'true';
+            const waterA = document.getElementById('water-A').value === 'true';
+            
+            const lightB = document.getElementById('light-B').value === 'true';
+            const waterB = document.getElementById('water-B').value === 'true';
+
+            let changedCount = 0;
+            let changedVariables = [];
+
+            if (lightA !== lightB) { changedCount++; changedVariables.push('陽光'); }
+            if (waterA !== waterB) { changedCount++; changedVariables.push('水分'); }
+
+            const feedback = document.getElementById('feedback');
+            const resImgA = document.getElementById('res-img-A');
+            const resImgB = document.getElementById('res-img-B');
+
+            // 1. 先根據植物生長科學事實，決定 A、B 組實際會不會發芽 (科學事實：綠豆發芽其實不需要陽光，但一定要有水)
+            resImgA.src = waterA ? 'images/result_grow.png' : 'images/result_die.png';
+            resImgB.src = waterB ? 'images/result_die.png' : 'images/result_grow.png'; 
+            // 修正更精準的科學呈現：
+            resImgA.src = waterA ? 'images/result_grow.png' : 'images/result_die.png';
+            resImgB.src = waterB ? 'images/result_grow.png' : 'images/result_die.png';
+
+            // 2. 判斷變因設計是否符合「題目要求 (陽光是否影響發芽)」
+            if (changedCount === 0) {
+                feedback.innerHTML = "❌ <b>哎呀！兩組的條件一模一樣。</b><br>這樣沒辦法比較出「陽光」的威力喔！請讓兩組的陽光不一樣試試看。";
+            } 
+            else if (changedCount > 1) {
+                feedback.innerHTML = `❌ <b>不對喔！你同時改變了太多條件：【${changedVariables.join(' 和 ')}】。</b><br>公平實驗一次只能改變<b>一個</b>條件！請把「水分」調成一模一樣。`;
+            } 
+            else {
+                // 剛好只改變一個變因
+                if (changedVariables[0] === '陽光') {
+                    feedback.innerHTML = `🎉 <b>太棒了！你設計出完美的公平實驗！</b><br>
+                    你的<span class="badge badge-op">操作變因</span>是：<b>陽光</b> (一組有、一組沒有)<br>
+                    你的<span class="badge badge-ctrl">控制變因</span>是：<b>水分</b> (兩組都${waterA ? '有澆水' : '沒澆水'})<br><br>
+                    📖 <b>科學小知識：</b>你會發現不論有沒有曬太陽，有澆水的綠豆都發芽了！這說明「陽光」不是綠豆發芽的必要條件喔！`;
+                } else {
+                    feedback.innerHTML = `⚠️ <b>稍微調整一下！</b><br>你現在測試的是「${changedVariables[0]}」對發芽的影響。<br>但小明想知道的是<b>「陽光」</b>喔！請重新設定。`;
+                }
+            }
+
+            // 顯示彈出視窗
+            document.getElementById('resultModal').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('resultModal').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+        }
+
+        // 初始化執行一次確保圖示正確
+        updateIcons();
+    </script>
+</body>
+</html>
