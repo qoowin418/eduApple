@@ -1,0 +1,790 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>五下自然互動：生鏽與耗氧大冒險 (手繪免元件優化版)</title>
+    <style>
+        /* ==========================================================================
+           1. 全域變數與通用樣式 (Global & Common Styles)
+           ========================================================================== */
+        :root {
+            --primary: #204a87;
+            --secondary: #3465a4;
+            --accent: #ce5c00;
+            --bg-color: #f2f6f9;
+            --sidebar-width: 90px;
+            --middle-panel-width: 260px;
+            --rust-color: #a40000;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Helvetica Neue', Arial, 'Noto Sans TC', sans-serif;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: #2e3436;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 三欄式佈局框架 */
+        .level-sidebar {
+            width: var(--sidebar-width);
+            background-color: #eef2f7;
+            border-right: 3px dashed #729fcf;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px 0;
+            height: 100%;
+            z-index: 11;
+        }
+
+        .sidebar-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 12px;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .word-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+            padding: 0 10px;
+        }
+
+        .word-btn {
+            background-color: #ffffff;
+            border: 2px solid #729fcf;
+            color: #2e3436;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 0 #729fcf;
+            line-height: 1.3;
+        }
+
+        .word-btn.active {
+            background-color: var(--primary);
+            color: white;
+            border-color: #204a87;
+            box-shadow: 0 3px 0 #183763;
+            transform: scale(1.05);
+        }
+
+        .control-panel-middle {
+            width: var(--middle-panel-width);
+            background-color: #ffffff;
+            border-right: 4px solid #729fcf;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 15px;
+            height: 100%;
+            box-shadow: 3px 0 10px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+
+        header h1 { margin: 0; color: var(--primary); font-size: 20px; text-align: center; }
+        .subtitle { font-size: 11px; color: #555753; text-align: center; margin: 5px 0 15px 0; }
+        .section-title { font-size: 14px; font-weight: bold; color: var(--secondary); margin-bottom: 8px; border-left: 4px solid var(--secondary); padding-left: 6px; }
+        .status-container { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+        
+        .status-bar {
+            font-size: 15px; font-weight: bold; color: var(--accent); background-color: #fdf6f0;
+            padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #f5d6bd;
+        }
+
+        .info-panel {
+            background-color: #f9faf9; border-left: 5px solid var(--primary); padding: 12px;
+            border-radius: 0 8px 8px 0; font-size: 14px; color: #2e3436; line-height: 1.5;
+        }
+
+        .control-buttons { display: flex; flex-direction: column; gap: 10px; margin-top: auto; padding-top: 15px; border-top: 2px dashed #e8e8e8; }
+        
+        button.action-btn {
+            background-color: #ffffff; border: 2px solid #d3d7cf; color: #2e3436; padding: 12px;
+            font-size: 15px; font-weight: bold; border-radius: 15px; cursor: pointer; transition: all 0.2s ease;
+        }
+        button.action-btn:hover { background-color: var(--secondary); color: white; border-color: var(--primary); }
+        button.primary-btn { background-color: var(--accent); color: white; border-color: var(--accent); font-size: 16px; }
+
+        .main-layout { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; height: 100%; }
+        
+        .canvas-container {
+            position: relative; width: 600px; height: 600px; background-color: #ffffff;
+            border: 10px solid #729fcf; border-radius: 16px; box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+            overflow: hidden; display: flex; flex-direction: column; align-items: center; padding: 20px;
+        }
+
+        /* 通用大彈窗 */
+        .success-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95);
+            z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
+        }
+        .success-overlay.show { opacity: 1; pointer-events: auto; }
+        .success-title { font-size: 26px; color: var(--primary); font-weight: bold; margin-bottom: 20px; text-align: center; }
+
+        /* ==========================================================================
+           2. 關卡一專用樣式 (Stage 1)
+           ========================================================================== */
+        .material-shelf { display: flex; gap: 20px; background: #f3f8f2; padding: 12px 25px; border-radius: 20px; border: 2px solid #d3d7cf; margin-bottom: 30px; }
+        .material-item { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; padding: 8px 15px; border-radius: 12px; background: white; border: 2px solid #babdb6; font-weight: bold; }
+        .material-item.selected { border-color: var(--accent); background-color: #fff9f5; box-shadow: 0 0 8px rgba(245,121,0,0.4); }
+        .rack-area { flex: 1; width: 100%; display: flex; justify-content: center; align-items: flex-end; gap: 40px; padding-bottom: 40px; position: relative; }
+        .rack-area::after { content: ''; position: absolute; bottom: 30px; width: 85%; height: 16px; background-color: #c0a080; border-radius: 4px; border-bottom: 4px solid #9f7f5f; z-index: 1; }
+        .test-tube { width: 80px; height: 280px; border: 4px solid #edd400; border-top: none; border-bottom-left-radius: 40px; border-bottom-right-radius: 40px; position: relative; background: rgba(238, 238, 236, 0.2); display: flex; flex-direction: column; justify-content: flex-end; align-items: center; cursor: pointer; z-index: 2; }
+        .tube-label { position: absolute; top: -35px; background: #3465a4; color: white; font-weight: bold; padding: 2px 10px; border-radius: 6px; font-size: 14px; }
+        .liquid-water { width: 100%; height: 0%; background: rgba(114, 159, 207, 0.5); border-bottom-left-radius: 32px; border-bottom-right-radius: 32px; position: absolute; bottom: 0; transition: height 0.5s ease; z-index: 3; }
+        .liquid-oil { width: 100%; height: 0%; background: rgba(252, 233, 79, 0.6); position: absolute; bottom: 0; transition: all 0.5s ease; z-index: 4; }
+        .tube-cap { position: absolute; top: -5px; width: 88px; height: 20px; background: #2e3436; border-radius: 4px; display: none; z-index: 5; }
+        .iron-nail { width: 24px; height: 200px; margin-bottom: 10px; z-index: 4; transition: filter 1s ease, transform 0.5s; }
+
+        /* ==========================================================================
+           3. 關卡二專用樣式 (Stage 2)
+           ========================================================================== */
+        #stage-oxygen { width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .experiment-set { position: relative; width: 400px; height: 400px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+        .water-tank { width: 320px; height: 100px; border: 5px solid #888a85; border-top: none; background: rgba(114, 159, 207, 0.3); position: relative; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; z-index: 1; }
+        .cylinder { width: 90px; height: 320px; border: 4px solid #555753; border-bottom: none; background: rgba(255, 255, 255, 0.4); position: absolute; bottom: 15px; z-index: 3; display: flex; flex-direction: column; align-items: center; border-top-left-radius: 8px; border-top-right-radius: 8px; overflow: hidden; }
+        .cylinder-water { width: 100%; height: 35px; background: rgba(114, 159, 207, 0.6); position: absolute; bottom: 0; transition: height 0.3s ease; border-top: 2px solid #3465a4; }
+        .wool-box { width: 70px; height: 70px; background: #888a85; border-radius: 50%; margin-top: 15px; z-index: 4; transition: background-color 0.3s ease; box-shadow: inset 0 0 10px rgba(0,0,0,0.3); }
+        .scale-mark { position: absolute; right: 5px; font-size: 11px; color: #555753; font-weight: bold; }
+        .slider-panel { width: 80%; margin-top: 25px; background: #f3f8f2; padding: 15px; border-radius: 15px; border: 2px solid #d3d7cf; text-align: center; }
+        .custom-slider { width: 100%; margin-top: 10px; cursor: pointer; }
+
+        /* ==========================================================================
+           4. 關卡三與關卡四共用：手繪無方框純科學看板樣式
+           ========================================================================== */
+        .science-text {
+            font-size: 16px;
+            font-weight: bold;
+            fill: #2e3436;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        .science-text.start-label { fill: #204a87; }
+        .science-text.end-label { fill: #4e9a06; }
+        
+        /* 畫布上的引導發光數字標記 */
+        .draw-start-circle {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: #3465a4;
+            color: white;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: translate(-15px, -15px);
+            z-index: 10;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 🧭 第一欄：最左側關卡切換選單 -->
+    <div class="level-sidebar">
+        <div class="sidebar-title">實驗<br>單元</div>
+        <div class="word-selector">
+            <button id="btn-stage1" class="word-btn active" onclick="StageManager.switch(1)">🧪<br>生鏽條件</button>
+            <button id="btn-stage2" class="word-btn" onclick="StageManager.switch(2)">🎈<br>耗氧實驗</button>
+            <button id="btn-stage3" class="word-btn" onclick="StageManager.switch(3)">🛡️<br>生活防鏽</button>
+            <button id="btn-stage4" class="word-btn" onclick="StageManager.switch(4)">🔗<br>微觀連連</button>
+        </div>
+    </div>
+
+    <!-- ⚙️ 第二欄：中間通用主控台面 -->
+    <div class="control-panel-middle">
+        <header>
+            <h1>🔬 虛擬科學實驗室</h1>
+            <div class="subtitle">自然五下：生鏽知多少</div>
+        </header>
+
+        <div class="status-container">
+            <div class="section-title">目前實驗狀態</div>
+            <div class="status-bar" id="statusBar">載入中...</div>
+
+            <div class="section-title">小老師筆記 🐱</div>
+            <div class="info-panel" id="infoPanel">載入中...</div>
+        </div>
+
+        <!-- ─── 各關卡獨立按鈕控制區 ─── -->
+        <div class="control-buttons" id="ui-controls-rust">
+            <button id="runBtn" class="action-btn primary-btn" onclick="RustStage.startSimulation()">⏳ 啟動時間加速器 (7天)</button>
+            <button class="action-btn" onclick="RustStage.reset()">🔄 重置實驗場景</button>
+        </div>
+        
+        <div class="control-buttons" id="ui-controls-oxygen" style="display:none;">
+            <button class="action-btn primary-btn" onclick="OxygenStage.showOverlayConclusion()">🧐 觀看實驗結論</button>
+            <button class="action-btn" onclick="OxygenStage.reset()">🔄 重置時間軸</button>
+        </div>
+        
+        <div class="control-buttons" id="ui-controls-antirust" style="display:none;">
+            <button class="action-btn primary-btn" onclick="AntiRustStage.showConclusion()">🛡️ 了解防鏽原理</button>
+            <button class="action-btn" onclick="AntiRustStage.reset()">🔄 重新手繪連線</button>
+        </div>
+
+        <div class="control-buttons" id="ui-controls-micro" style="display:none;">
+            <button class="action-btn primary-btn" onclick="MicroStage.showConclusion()">💡 觀看微觀原理</button>
+            <button class="action-btn" onclick="MicroStage.reset()">🔄 重新手繪連線</button>
+        </div>
+    </div>
+
+    <!-- 🎨 第三欄：右側超大畫布實驗區 -->
+    <div class="main-layout">
+        <div class="canvas-container">
+            
+            <!-- 【關卡一：生鏽條件 HTML 面板】 -->
+            <div id="stage-rust" style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center;">
+                <div class="material-shelf">
+                    <div class="material-item" id="mat-water" onclick="RustStage.selectTool('water')"><span>💧 純水</span></div>
+                    <div class="material-item" id="mat-oil" onclick="RustStage.selectTool('oil')"><span>🍾 蓋油</span></div>
+                    <div class="material-item" id="mat-cap" onclick="RustStage.selectTool('cap')"><span>🪵 瓶蓋</span></div>
+                </div>
+
+                <div class="rack-area">
+                    <div class="test-tube" onclick="RustStage.injectMaterial(1)">
+                        <div class="tube-label">試管甲</div>
+                        <div class="tube-cap" id="cap-1"></div><div class="liquid-oil" id="oil-1"></div><div class="liquid-water" id="water-1"></div>
+                        <svg class="iron-nail" id="nail-1" viewBox="0 0 24 200"><path d="M12,10 L12,190 M4,10 L20,10" stroke="#75507b" stroke-width="8" stroke-linecap="round"/></svg>
+                    </div>
+                    <div class="test-tube" onclick="RustStage.injectMaterial(2)">
+                        <div class="tube-label">試管乙</div>
+                        <div class="tube-cap" id="cap-2"></div><div class="liquid-oil" id="oil-2"></div><div class="liquid-water" id="water-2"></div>
+                        <svg class="iron-nail" id="nail-2" viewBox="0 0 24 200"><path d="M12,10 L12,190 M4,10 L20,10" stroke="#75507b" stroke-width="8" stroke-linecap="round"/></svg>
+                    </div>
+                    <div class="test-tube" onclick="RustStage.injectMaterial(3)">
+                        <div class="tube-label">試管丙</div>
+                        <div class="tube-cap" id="cap-3"></div><div class="liquid-oil" id="oil-3"></div><div class="liquid-water" id="water-3"></div>
+                        <svg class="iron-nail" id="nail-3" viewBox="0 0 24 200"><path d="M12,10 L12,190 M4,10 L20,10" stroke="#75507b" stroke-width="8" stroke-linecap="round"/></svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 【關卡二：耗氧實驗 HTML 面板】 -->
+            <div id="stage-oxygen">
+                <h3 style="margin: 0 0 15px 0; color:var(--primary);">倒扣量筒與濕鋼絲絨耗氧觀測</h3>
+                <div class="experiment-set">
+                    <div class="cylinder">
+                        <div class="wool-box" id="steelWool"></div>
+                        <div class="scale-mark" style="top:90px;">- 4/5</div>
+                        <div class="scale-mark" style="top:150px;">- 3/5</div>
+                        <div class="scale-mark" style="top:210px;">- 2/5</div>
+                        <div class="scale-mark" style="top:260px; color:#ce5c00;">- 1/5 (氧氣線)</div>
+                        <div class="cylinder-water" id="cylinderWater"></div>
+                    </div>
+                    <div class="water-tank"></div>
+                </div>
+
+                <div class="slider-panel">
+                    <div style="font-weight: bold;">⏰ 調整觀測實驗時間：<span id="timeDisplay" style="color:var(--accent); font-size:18px;">0</span> 小時後</div>
+                    <input type="range" min="0" max="24" value="0" class="custom-slider" id="timeSlider" oninput="OxygenStage.updateTimeline(this.value)">
+                </div>
+            </div>
+
+            <!-- 【關卡三：生活防鏽（優化：純手繪畫布，無方框無擋字）】 -->
+            <div id="stage-anti-rust" style="width:100%; height:100%; display:none; flex-direction:column; align-items:center; position:relative;">
+                <h3 style="margin:0 0 15px 0; color:var(--primary);">生活防鏽手繪配對：將物品與正確方法劃線相連！</h3>
+                <div class="ar-canvas-wrapper" style="position:relative; width:100%; flex:1; background:#ffffff; border:3px solid #729fcf; border-radius:12px; overflow:hidden;">
+                    <svg id="antirustSvg" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:5; cursor:crosshair;">
+                        <!-- 背景科學明文字體層，完全與線條交錯不重疊 -->
+                        <text x="40" y="110" class="science-text start-label">🚲 腳踏車鍊條</text>
+                        <text x="40" y="230" class="science-text start-label">🔪 廚房菜刀</text>
+                        <text x="40" y="350" class="science-text start-label">🚧 戶外鐵籬笆</text>
+
+                        <text x="420" y="110" class="science-text end-label">🎨 刷上防鏽油漆</text>
+                        <text x="420" y="230" class="science-text end-label">💧 擦上潤滑機油</text>
+                        <text x="420" y="350" class="science-text end-label">💨 保持乾燥通風</text>
+
+                        <g id="arHistoryStrokes" fill="none" stroke="#204a87" stroke-width="6" stroke-linecap="round" opacity="0.85"></g>
+                        <path id="arGuideTrack" fill="none" stroke="#729fcf" stroke-width="24" stroke-linecap="round" opacity="0.18" stroke-dasharray="6 8"></path>
+                        <path id="arUserTrack" fill="none" stroke="#ef2929" stroke-width="6" stroke-linecap="round"></path>
+                    </svg>
+                    <!-- 純數字起點燈號層 -->
+                    <div id="antirustHtmlMarkers" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:10; pointer-events:none;"></div>
+                </div>
+            </div>
+
+            <!-- 【關卡四：微觀連連（優化：無方框、無動物、手繪化學反應軌跡）】 -->
+            <div id="stage-micro" style="width:100%; height:100%; display:none; flex-direction:column; align-items:center; position:relative;">
+                <h3 style="margin:0 0 15px 0; color:var(--primary);">微觀化學手繪結合：請由數字起點劃線進入核心反應！</h3>
+                <div class="micro-canvas-wrapper" style="position:relative; width:100%; flex:1; background:#ffffff; border:3px solid #729fcf; border-radius:12px; overflow:hidden;">
+                    <svg id="microSvg" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:5; cursor:crosshair;">
+                        <!-- 背景科學分子字體，擺放位置完美交錯 -->
+                        <text x="140" y="125" class="science-text mol-fe-text" font-size="16" font-weight="bold">鐵原子 (Fe)</text>
+                        <text x="360" y="125" class="science-text mol-h2o-text" font-size="16" font-weight="bold">水分子 (H₂O)</text>
+                        
+                        <!-- 中心發光核心 -->
+                        <circle cx="280" cy="240" r="35" fill="rgba(204, 0, 0, 0.15)" stroke="#cc0000" stroke-width="2" stroke-dasharray="4 4"/>
+                        <text x="280" y="245" text-anchor="middle" font-size="15" font-weight="bold" fill="#cc0000">氧氣核心 O₂</text>
+
+                        <!-- 下方鐵鏽成果 -->
+                        <text x="280" y="445" text-anchor="middle" font-size="18" font-weight="bold" fill="#a40000">氧化鐵結晶 (Fe₂O₃ 鐵鏽)</text>
+
+                        <g id="mHistoryStrokes" fill="none" stroke="#3465a4" stroke-width="6" stroke-linecap="round" opacity="0.85"></g>
+                        <path id="mGuideTrack" fill="none" stroke="#729fcf" stroke-width="24" stroke-linecap="round" opacity="0.18" stroke-dasharray="6 8"></path>
+                        <path id="mUserTrack" fill="none" stroke="#ef2929" stroke-width="6" stroke-linecap="round"></path>
+                    </svg>
+                    <!-- 起點數字指示燈 -->
+                    <div id="microHtmlMarkers" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:10; pointer-events:none;"></div>
+                </div>
+            </div>
+
+            <!-- 全域通用實驗報告彈窗 -->
+            <div class="success-overlay" id="successOverlay">
+                <div style="font-size: 55px; animation: bounce 0.6s infinite alternate;">🎉🔬✨</div>
+                <div class="success-title" id="successTitle">實驗報告</div>
+                <div style="color: #555753; margin-bottom: 20px; text-align: center; max-width: 440px; line-height: 1.6;" id="successDesc"></div>
+                <button class="action-btn primary-btn" style="padding:10px 25px;" onclick="StageManager.closeOverlay()">關閉視窗</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ==========================================================================
+         JavaScript 核心控制程式碼
+         ========================================================================== -->
+    <script>
+        // 🚀 【總管：關卡切換管理器】
+        const StageManager = {
+            switch(stageNum) {
+                document.getElementById('btn-stage1').classList.toggle('active', stageNum === 1);
+                document.getElementById('btn-stage2').classList.toggle('active', stageNum === 2);
+                document.getElementById('btn-stage3').classList.toggle('active', stageNum === 3);
+                document.getElementById('btn-stage4').classList.toggle('active', stageNum === 4);
+
+                document.getElementById('stage-rust').style.display = stageNum === 1 ? 'flex' : 'none';
+                document.getElementById('stage-oxygen').style.display = stageNum === 2 ? 'flex' : 'none';
+                document.getElementById('stage-anti-rust').style.display = stageNum === 3 ? 'flex' : 'none';
+                document.getElementById('stage-micro').style.display = stageNum === 4 ? 'flex' : 'none';
+
+                document.getElementById('ui-controls-rust').style.display = stageNum === 1 ? 'flex' : 'none';
+                document.getElementById('ui-controls-oxygen').style.display = stageNum === 2 ? 'flex' : 'none';
+                document.getElementById('ui-controls-antirust').style.display = stageNum === 3 ? 'flex' : 'none';
+                document.getElementById('ui-controls-micro').style.display = stageNum === 4 ? 'flex' : 'none';
+
+                if (stageNum === 1) RustStage.init();
+                if (stageNum === 2) OxygenStage.init();
+                if (stageNum === 3) AntiRustStage.init();
+                if (stageNum === 4) MicroStage.init();
+            },
+            openOverlay(title, htmlContent) {
+                document.getElementById('successTitle').innerText = title;
+                document.getElementById('successDesc').innerHTML = htmlContent;
+                document.getElementById('successOverlay').classList.add('show');
+            },
+            closeOverlay() {
+                document.getElementById('successOverlay').classList.remove('show');
+            }
+        };
+
+        // 🧪 【組件一：第一關 生鏽條件科學邏輯】
+        const RustStage = {
+            selectedTool: null,
+            tubeStates: {
+                1: { water: false, oil: false, cap: false },
+                2: { water: false, oil: false, cap: false },
+                3: { water: false, oil: false, cap: false }
+            },
+            init() {
+                document.getElementById('statusBar').innerText = "配置你的試管吧！";
+                document.getElementById('infoPanel').innerHTML = `請先從右側上方點選<strong>【水】、【油】或【蓋子】</strong>，接著點擊你想注入的試管。<br><br>配置完成後，點擊下方的「啟動時間加速器」。`;
+                this.reset();
+            },
+            selectTool(type) {
+                this.selectedTool = type;
+                document.querySelectorAll('#stage-rust .material-item').forEach(item => item.classList.remove('selected'));
+                document.getElementById(`mat-${type}`).classList.add('selected');
+                document.getElementById('statusBar').innerText = `已選取素材，請點擊下方試管注入！`;
+            },
+            injectMaterial(tubeId) {
+                if (!this.selectedTool) return;
+                const state = this.tubeStates[tubeId];
+
+                if (this.selectedTool === 'water') {
+                    state.water = !state.water;
+                    document.getElementById(`water-${tubeId}`).style.height = state.water ? '40%' : '0%';
+                } else if (this.selectedTool === 'oil') {
+                    state.oil = !state.oil;
+                    document.getElementById(`oil-${tubeId}`).style.height = state.oil ? '15%' : '0%';
+                } else if (this.selectedTool === 'cap') {
+                    state.cap = !state.cap;
+                    document.getElementById(`cap-${tubeId}`).style.display = state.cap ? 'block' : 'none';
+                }
+
+                if (state.oil) {
+                    document.getElementById(`oil-${tubeId}`).style.bottom = state.water ? '40%' : '0%';
+                }
+            },
+            startSimulation() {
+                document.getElementById('statusBar').innerText = `時空加速中...正在觀測 7 天後的改變！`;
+                setTimeout(() => {
+                    let report = "";
+                    for (let id = 1; id <= 3; id++) {
+                        const state = this.tubeStates[id];
+                        const nail = document.getElementById(`nail-${id}`);
+                        const name = id === 1 ? '甲' : id === 2 ? '乙' : '丙';
+
+                        if (state.water && !state.oil) {
+                            nail.style.filter = 'sepia(1) saturate(5) hue-rotate(-30deg)';
+                            report += `【試管${name}】：鐵釘同時接觸到水與空氣，生鏽非常嚴重！🔴<br>`;
+                        } else if (state.water && state.oil) {
+                            nail.style.filter = 'none';
+                            report += `【試管${name}】：雖然有水，但油層阻擋了空氣，因此完好如初！🟢<br>`;
+                        } else {
+                            nail.style.filter = 'none';
+                            report += `【試管${name}】：沒有水分，鐵釘不會生鏽！🟢<br>`;
+                        }
+                    }
+                    StageManager.openOverlay("🔍 7 天後試管觀測報告", report);
+                }, 1000);
+            },
+            reset() {
+                this.tubeStates = { 1: {water:false,oil:false,cap:false}, 2: {water:false,oil:false,cap:false}, 3: {water:false,oil:false,cap:false} };
+                for (let id = 1; id <= 3; id++) {
+                    document.getElementById(`water-${id}`).style.height = '0%';
+                    document.getElementById(`oil-${id}`).style.height = '0%';
+                    document.getElementById(`cap-${id}`).style.display = 'none';
+                    document.getElementById(`nail-${id}`).style.filter = 'none';
+                }
+                this.selectedTool = null;
+                document.querySelectorAll('#stage-rust .material-item').forEach(item => item.classList.remove('selected'));
+            }
+        };
+
+        // 🎈 【組件二：第二關 耗氧量筒科學邏輯】
+        const OxygenStage = {
+            init() {
+                document.getElementById('statusBar').innerText = "拖動下方時間軸，觀察水位變化！";
+                document.getElementById('infoPanel').innerHTML = `<strong>🎈 鋼絲絨吸氧實驗筆記：</strong><br><br>濕鋼絲絨塞在倒扣的量筒頂部。請拉動下方的<strong>時間軸</strong>，觀察隨時間過去，鋼絲絨的外觀顏色與量筒內的水位高度變化！`;
+                this.reset();
+            },
+            updateTimeline(hours) {
+                document.getElementById('timeDisplay').innerText = hours;
+                
+                const waterEl = document.getElementById('cylinderWater');
+                const woolEl = document.getElementById('steelWool');
+
+                const baseWaterHeight = 35;
+                const maxRise = 57; 
+                const currentWaterHeight = baseWaterHeight + (maxRise * (hours / 24));
+                waterEl.style.height = `${currentWaterHeight}px`;
+
+                const rustRatio = hours / 24;
+                woolEl.style.backgroundColor = `rgb(${136 + (164-136)*rustRatio}, ${138 - 138*rustRatio}, ${133 - 133*rustRatio})`;
+
+                if(hours == 0) {
+                    document.getElementById('statusBar').innerText = "實驗剛開始，水位平齊，鋼絲絨尚未生鏽。";
+                } else if(hours == 24) {
+                    document.getElementById('statusBar').innerText = "24小時後氧氣耗盡，水面固定在 1/5 處不再上升！";
+                    this.showOverlayConclusion();
+                } else {
+                    document.getElementById('statusBar').innerText = "生鏽正在激烈進行！量筒內的水面慢慢爬高囉！";
+                }
+            },
+            showOverlayConclusion() {
+                const htmlContent = `
+                    <strong>1. 為什麼水位會上升？</strong><br>
+                    因為頂部的鋼絲絨生鏽時，會消耗掉量筒內空氣中的<strong>「氧氣」</strong>。當內部氣體變少、壓力降低時，外面的水就被大氣壓力推進量筒裡了！<br><br>
+                    <strong>2. 為什麼剛好卡在約 1/5 的位置？</strong><br>
+                    因為空氣中大約只有 <strong>21% (接近 1/5)</strong> 是氧氣。當氧氣被消耗光後，水面就不會再繼續上升囉！
+                `;
+                StageManager.openOverlay("🎈 鋼絲絨吸氧實驗大解密", htmlContent);
+            },
+            reset() {
+                document.getElementById('timeSlider').value = 0;
+                this.updateTimeline(0);
+            }
+        };
+
+        // 🛡️ 【組件三：第三關 生活防鏽手繪配對邏輯】
+        const AntiRustStage = {
+            currentStep: 0,
+            isDrawing: false,
+            // 座標完全與文字明文錯開，直接手繪判定
+            strokeData: [
+                { id: 1, start: [180, 105], end: [410, 225], info: "第一題：請由數字 1 出發，手繪劃線到適合『腳踏車鍊條』的防鏽手段！" },
+                { id: 2, start: [180, 225], end: [410, 345], info: "第二題：請由數字 2 出發，手繪劃線到符合菜刀食品安全的防鏽大招！" },
+                { id: 3, start: [180, 345], end: [410, 105], info: "第三題：請由數字 3 出發，手繪劃線到隔絕戶外鐵籬笆大範圍风雨的屏障！" }
+            ],
+            init() {
+                document.getElementById('statusBar').innerText = "生活防鏽手繪配對！";
+                document.getElementById('infoPanel').innerHTML = `<strong>🛡️ 生活防鏽手繪筆記：</strong><br><br>請直接從帶有數字的<strong>藍色起點圓圈</strong>按住，沿著軌跡一筆畫向右側對應的答案文字終點！無元件擋字，直接手繪畫圖判斷。`;
+                this.reset();
+            },
+            renderStep() {
+                const container = document.getElementById('antirustHtmlMarkers');
+                const uTrack = document.getElementById('arUserTrack');
+                const gTrack = document.getElementById('arGuideTrack');
+                const hStrokes = document.getElementById('arHistoryStrokes');
+                
+                container.innerHTML = '';
+                uTrack.setAttribute('d', '');
+
+                if (this.currentStep >= this.strokeData.length) {
+                    document.getElementById('statusBar').innerText = "生活防鏽全部配對成功！";
+                    this.showConclusion();
+                    return;
+                }
+
+                const data = this.strokeData[this.currentStep];
+                document.getElementById('statusBar').innerText = data.info;
+
+                // 渲染過往成功的歷史軌跡線
+                hStrokes.innerHTML = '';
+                for (let i = 0; i < this.currentStep; i++) {
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    path.setAttribute('d', `M ${this.strokeData[i].start[0]} ${this.strokeData[i].start[1]} L ${this.strokeData[i].end[0]} ${this.strokeData[i].end[1]}`);
+                    hStrokes.appendChild(path);
+                }
+
+                // 設定目前的引導暗軌跡
+                gTrack.setAttribute('d', `M ${data.start[0]} ${data.start[1]} L ${data.end[0]} ${data.end[1]}`);
+
+                // 只生成一個簡潔的發光起點數字球，絕不擋字
+                const sDiv = document.createElement('div');
+                sDiv.className = 'draw-start-circle';
+                sDiv.style.left = `${data.start[0]}px`;
+                sDiv.style.top = `${data.start[1]}px`;
+                sDiv.innerText = data.id;
+                container.appendChild(sDiv);
+
+                this.setupTracking(data.start, data.end);
+            },
+            setupTracking(startPt, endPt) {
+                const svgEl = document.getElementById('antirustSvg');
+                const uTrack = document.getElementById('arUserTrack');
+                
+                svgEl.onmousedown = null; window.onmousemove = null; window.onmouseup = null;
+                svgEl.ontouchstart = null; svgEl.ontouchmove = null; svgEl.ontouchend = null;
+
+                let userPoints = [];
+                let startTriggered = false;
+
+                const getPos = (e) => {
+                    const rect = svgEl.getBoundingClientRect();
+                    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+                    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+                    return [Math.round(cx - rect.left), Math.round(cy - rect.top)];
+                };
+
+                const onStart = (e) => {
+                    const pos = getPos(e);
+                    if (Math.hypot(pos[0] - startPt[0], pos[1] - startPt[1]) < 40) {
+                        this.isDrawing = true;
+                        startTriggered = true;
+                        userPoints = [pos];
+                        uTrack.setAttribute('d', `M ${pos[0]} ${pos[1]}`);
+                    }
+                };
+
+                const onMove = (e) => {
+                    if (!this.isDrawing || !startTriggered) return;
+                    const pos = getPos(e);
+                    userPoints.push(pos);
+                    
+                    let d = `M ${userPoints[0][0]} ${userPoints[0][1]}`;
+                    for(let i=1; i<userPoints.length; i++) d += ` L ${userPoints[i][0]} ${userPoints[i][1]}`;
+                    uTrack.setAttribute('d', d);
+
+                    // 抵達文字終點判定
+                    if (Math.hypot(pos[0] - endPt[0], pos[1] - endPt[1]) < 35) {
+                        this.isDrawing = false;
+                        startTriggered = false;
+                        this.currentStep++;
+                        setTimeout(() => this.renderStep(), 200);
+                    }
+                };
+
+                const onEnd = () => {
+                    if (!this.isDrawing) return;
+                    this.isDrawing = false;
+                    if (startTriggered) uTrack.setAttribute('d', '');
+                    startTriggered = false;
+                };
+
+                svgEl.addEventListener('mousedown', onStart);
+                window.addEventListener('mousemove', onMove);
+                window.addEventListener('mouseup', onEnd);
+
+                svgEl.addEventListener('touchstart', onStart, {passive: false});
+                window.addEventListener('touchmove', onMove, {passive: false});
+                svgEl.addEventListener('touchend', onEnd);
+            },
+            showConclusion() {
+                StageManager.openOverlay("🛡️ 生活防鏽手繪大通關", `
+                    掌握生活科學！防鏽原理核心結論：<br><br>
+                    1. <strong>鐵籬笆 $\rightarrow$ 刷油漆：</strong>戶外大面積隔絕大氣水分氧氣最好的手段。<br>
+                    2. <strong>腳踏車鍊條 $\rightarrow$ 擦潤滑機油：</strong>兼顧靈活轉動滑順與化學防鏽。<br>
+                    3. <strong>廚房菜刀 $\rightarrow$ 保持乾燥通風：</strong>切食物忌諱化學漆料，用完立刻洗淨擦乾最安全！
+                `);
+            },
+            reset() {
+                this.currentStep = 0;
+                this.renderStep();
+            }
+        };
+
+        // 🔗 【組件四：第四關 微觀科學連連看邏輯】
+        const MicroStage = {
+            currentStep: 0,
+            isDrawing: false,
+            // 點位完全和字體錯開，並且將擋字的方框和動物頭像全面移除！
+            strokeData: [
+                { id: 1, start: [180, 140], end: [240, 220], info: "第一步：請由起點 1 出發，劃線將『鐵原子 (Fe)』牽引進入核心結合反應！" },
+                { id: 2, start: [380, 140], end: [320, 220], info: "第二步：請由起點 2 出發，劃線將『水分子 (H₂O)』引入核心，發揮催化效果！" },
+                { id: 3, start: [280, 280], end: [280, 410], info: "第三步：化學能量大爆發！請由核心一筆直直向下拉到下方，融合成鐵鏽結晶！" }
+            ],
+            init() {
+                document.getElementById('statusBar').innerText = "微觀化學手繪大結合！";
+                document.getElementById('infoPanel').innerHTML = `<strong>🔗 微觀化學連線筆記：</strong><br><br>我們移除了所有阻擋視野的動物和方框框。請直接從藍色數字圈出發，依著虛線手繪劃線，將原子送入化學結合的核心吧！`;
+                this.reset();
+            },
+            renderStep() {
+                const container = document.getElementById('microHtmlMarkers');
+                const uTrack = document.getElementById('mUserTrack');
+                const gTrack = document.getElementById('mGuideTrack');
+                const hStrokes = document.getElementById('mHistoryStrokes');
+                
+                container.innerHTML = '';
+                uTrack.setAttribute('d', '');
+
+                if (this.currentStep >= this.strokeData.length) {
+                    document.getElementById('statusBar').innerText = "微觀化學鍵結完成！";
+                    this.showConclusion();
+                    return;
+                }
+
+                const data = this.strokeData[this.currentStep];
+                document.getElementById('statusBar').innerText = data.info;
+
+                // 繪製歷史手繪成功線條
+                hStrokes.innerHTML = '';
+                for (let i = 0; i < this.currentStep; i++) {
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    path.setAttribute('d', `M ${this.strokeData[i].start[0]} ${this.strokeData[i].start[1]} L ${this.strokeData[i].end[0]} ${this.strokeData[i].end[1]}`);
+                    hStrokes.appendChild(path);
+                }
+
+                // 指引明線軌跡
+                gTrack.setAttribute('d', `M ${data.start[0]} ${data.start[1]} L ${data.end[0]} ${data.end[1]}`);
+
+                // 僅在起點生成數字提示球，畫面乾淨清爽
+                const sDiv = document.createElement('div');
+                sDiv.className = 'draw-start-circle';
+                sDiv.style.left = `${data.start[0]}px`;
+                sDiv.style.top = `${data.start[1]}px`;
+                sDiv.innerText = data.id;
+                container.appendChild(sDiv);
+
+                this.setupTracking(data.start, data.end);
+            },
+            setupTracking(startPt, endPt) {
+                const svgEl = document.getElementById('microSvg');
+                const uTrack = document.getElementById('mUserTrack');
+                
+                svgEl.onmousedown = null; window.onmousemove = null; window.onmouseup = null;
+                svgEl.ontouchstart = null; svgEl.ontouchmove = null; svgEl.ontouchend = null;
+
+                let userPoints = [];
+                let startTriggered = false;
+
+                const getPos = (e) => {
+                    const rect = svgEl.getBoundingClientRect();
+                    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+                    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+                    return [Math.round(cx - rect.left), Math.round(cy - rect.top)];
+                };
+
+                const onStart = (e) => {
+                    const pos = getPos(e);
+                    if (Math.hypot(pos[0] - startPt[0], pos[1] - startPt[1]) < 40) {
+                        this.isDrawing = true;
+                        startTriggered = true;
+                        userPoints = [pos];
+                        uTrack.setAttribute('d', `M ${pos[0]} ${pos[1]}`);
+                    }
+                };
+
+                const onMove = (e) => {
+                    if (!this.isDrawing || !startTriggered) return;
+                    const pos = getPos(e);
+                    userPoints.push(pos);
+                    
+                    let d = `M ${userPoints[0][0]} ${userPoints[0][1]}`;
+                    for(let i=1; i<userPoints.length; i++) d += ` L ${userPoints[i][0]} ${userPoints[i][1]}`;
+                    uTrack.setAttribute('d', d);
+
+                    // 到達目標物理核心範圍判定
+                    if (Math.hypot(pos[0] - endPt[0], pos[1] - endPt[1]) < 35) {
+                        this.isDrawing = false;
+                        startTriggered = false;
+                        this.currentStep++;
+                        setTimeout(() => this.renderStep(), 200);
+                    }
+                };
+
+                const onEnd = () => {
+                    if (!this.isDrawing) return;
+                    this.isDrawing = false;
+                    if (startTriggered) uTrack.setAttribute('d', '');
+                    startTriggered = false;
+                };
+
+                svgEl.addEventListener('mousedown', onStart);
+                window.addEventListener('mousemove', onMove);
+                window.addEventListener('mouseup', onEnd);
+
+                svgEl.addEventListener('touchstart', onStart, {passive: false});
+                window.addEventListener('touchmove', onMove, {passive: false});
+                svgEl.addEventListener('touchend', onEnd);
+            },
+            showConclusion() {
+                StageManager.openOverlay("🔗 微觀世界化學大解密", `
+                    <strong>生鏽在微觀底下的真面目：</strong><br><br>
+                    這是一場電子轉移與化學鍵結的反應！<br><br>
+                    當固體結構中的<strong>鐵原子 (Fe)</strong> 遇到了空氣與水中的<strong>氧氣 (O₂)</strong>，在水分子的推波助瀾下，原子間互相碰撞、共用電子，最終轉變為一整塊疏鬆、紅褐色的全新物質 —— <strong>氧化鐵 (Fe₂O₃ 鐵鏽)</strong>！
+                `);
+            },
+            reset() {
+                this.currentStep = 0;
+                this.renderStep();
+            }
+        };
+
+        // 頁面初次載入時，預設執行第一關
+        window.onload = () => {
+            StageManager.switch(1);
+        };
+    </script>
+</body>
+</html>
+
+```

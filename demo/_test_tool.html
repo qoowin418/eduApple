@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>漢字筆順 - 網頁格式專用輸出工具 (具備復原功能)</title>
+    <style>
+        :root {
+            --primary: #4e9a06;
+            --accent: #f57900;
+            --bg-color: #f3f8f2;
+            --grid-color: #edd400;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: Menlo, Monaco, Consolas, 'Noto Sans TC', sans-serif;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 左側：自動記錄與輸出面板 */
+        .logger-panel {
+            width: 450px;
+            background-color: #2e3436;
+            color: #eeeeec;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            height: 100%;
+            border-right: 5px solid #1a1a1a;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.3);
+        }
+
+        .logger-panel h2 {
+            margin: 0 0 5px 0;
+            color: #fce94f;
+            font-size: 20px;
+            text-align: center;
+        }
+
+        .instruction {
+            font-size: 13px;
+            color: #babdb6;
+            margin-bottom: 15px;
+            line-height: 1.5;
+            background: #202425;
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            flex: 1;
+            background-color: #4e9a06;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #316104;
+            transition: all 0.1s ease;
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(3px);
+            box-shadow: 0 0px 0 #316104;
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        button.undo-btn {
+            background-color: #3465a4;
+            box-shadow: 0 3px 0 #20416b;
+        }
+        button.undo-btn:active:not(:disabled) {
+            box-shadow: 0 0px 0 #20416b;
+        }
+
+        button.clear-btn {
+            background-color: #cc0000;
+            box-shadow: 0 3px 0 #8a0000;
+        }
+        button.clear-btn:active:not(:disabled) {
+            box-shadow: 0 0px 0 #8a0000;
+        }
+
+        /* 程式碼輸出框 */
+        .output-box {
+            flex: 1;
+            background-color: #000000;
+            color: #8ae234;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            white-space: pre;
+            overflow: auto;
+            border: 1px solid #555753;
+        }
+
+        /* 右側：標準 600x600 畫布 */
+        .canvas-layout {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            background-color: #ffffff;
+            border: 10px solid #c0a080;
+            border-radius: 16px;
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+        }
+
+        .mi-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .mi-line {
+            stroke: var(--grid-color);
+            stroke-width: 2.5;
+            stroke-dasharray: 6 6;
+            opacity: 0.6;
+        }
+
+        .mi-border-cross {
+            stroke: var(--grid-color);
+            stroke-width: 3;
+            opacity: 0.5;
+        }
+
+        #drawSvg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            cursor: crosshair;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="logger-panel">
+        <h2>✍️ 漢字筆順格式生成器</h2>
+        <div class="instruction">
+            <strong>💡 教學使用說明：</strong><br>
+            依正確筆順在右側一筆一筆畫。放開滑鼠時左側會自動更新格式。產出的程式碼可直接貼入網頁原始碼內！
+        </div>
+        
+        <div class="btn-group">
+            <button onclick="copyCode()" style="margin-bottom: 4px;">📋 複製完美格式程式碼</button>
+            <div class="btn-row">
+                <button id="undoBtn" class="undo-btn" onclick="undoLastStroke()" disabled>⏮ 退回上一步</button>
+                <button class="clear-btn" onclick="clearCanvas()">🔄 清空重來</button>
+            </div>
+        </div>
+
+        <div class="output-box" id="outputBox">// 依序寫完筆畫後，此處會自動產生對齊網頁格式的陣列內容...</div>
+    </div>
+
+    <div class="canvas-layout">
+        <div class="canvas-container" id="canvasContainer">
+            <svg class="mi-grid">
+                <line x1="0" y1="0" x2="600" y2="600" class="mi-line"></line>
+                <line x1="600" y1="0" x2="0" y2="600" class="mi-line"></line>
+                <line x1="300" y1="0" x2="300" y2="600" class="mi-border-cross"></line>
+                <line x1="0" y1="300" x2="600" y2="300" class="mi-border-cross"></line>
+            </svg>
+
+            <svg id="drawSvg">
+                <g id="historyStrokes" fill="none" stroke="#4e9a06" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" opacity="0.4"></g>
+                <path id="currentPath" fill="none" stroke="#ef2929" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+        </div>
+    </div>
+
+    <script>
+        const svg = document.getElementById('drawSvg');
+        const container = document.getElementById('canvasContainer');
+        const currentPath = document.getElementById('currentPath');
+        const historyStrokes = document.getElementById('historyStrokes');
+        const outputBox = document.getElementById('outputBox');
+        const undoBtn = document.getElementById('undoBtn');
+
+        let isDrawing = false;
+        let currentPoints = [];
+        let allRecordedStrokes = [];
+
+        const animalList = ["🐱", "🐶", "🐰", "🦊", "🐻", "🦁", "🐢", "🐸", "🐵", "🐧", "🐨", "🐥", "🦉", "🦇", "🐹", "🐲", "🐯", "🐳", "🐦", "🐼"];
+        const SAMPLE_THRESHOLD = 18; 
+
+        function getXY(e) {
+            const rect = container.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: Math.round(clientX - rect.left),
+                y: Math.round(clientY - rect.top)
+            };
+        }
+
+        function guessStrokeName(points) {
+            if (points.length < 2) return "點";
+            const start = points[0];
+            const end = points[points.length - 1];
+            const dx = end[0] - start[0];
+            const dy = end[1] - start[1];
+            
+            if (Math.abs(dx) > Math.abs(dy) && dy > 0) return "橫";
+            if (Math.abs(dy) > Math.abs(dx) && dy > 0) return "豎";
+            if (dx < 0 && dy > 0) return "撇";
+            if (dx > 0 && dy > 0) return "捺";
+            if (dx > 0 && dy < 0) return "提";
+            return "橫折";
+        }
+
+        function onStart(e) {
+            isDrawing = true;
+            const pt = getXY(e);
+            currentPoints = [[pt.x, pt.y]];
+            updatePathView();
+            if(e.touches) e.preventDefault();
+        }
+
+        function onMove(e) {
+            if (!isDrawing) return;
+            const pt = getXY(e);
+            const lastPt = currentPoints[currentPoints.length - 1];
+            
+            const dist = Math.hypot(pt.x - lastPt[0], pt.y - lastPt[1]);
+            if (dist > SAMPLE_THRESHOLD) {
+                currentPoints.push([pt.x, pt.y]);
+                updatePathView();
+            }
+            if(e.touches) e.preventDefault();
+        }
+
+        function onEnd() {
+            if (!isDrawing) return;
+            isDrawing = false;
+
+            if (currentPoints.length > 1) {
+                allRecordedStrokes.push(currentPoints);
+                renderHistory();
+                generateJSONCode();
+            }
+            currentPoints = [];
+            currentPath.setAttribute('d', '');
+        }
+
+        function updatePathView() {
+            if (currentPoints.length === 0) return;
+            let d = `M ${currentPoints[0][0]} ${currentPoints[0][1]}`;
+            for (let i = 1; i < currentPoints.length; i++) {
+                d += ` L ${currentPoints[i][0]} ${currentPoints[i][1]}`;
+            }
+            currentPath.setAttribute('d', d);
+        }
+
+        function renderHistory() {
+            historyStrokes.innerHTML = '';
+            allRecordedStrokes.forEach(stroke => {
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                let d = `M ${stroke[0][0]} ${stroke[0][1]}`;
+                for (let i = 1; i < stroke.length; i++) {
+                    d += ` L ${stroke[i][0]} ${stroke[i][1]}`;
+                }
+                path.setAttribute('d', d);
+                historyStrokes.appendChild(path);
+            });
+            // 控制復原按鈕的啟用狀態
+            undoBtn.disabled = allRecordedStrokes.length === 0;
+        }
+
+        function generateJSONCode() {
+            if (allRecordedStrokes.length === 0) {
+                outputBox.innerText = '// 面板已清空，請重新依筆順書寫...';
+                return;
+            }
+
+            let code = "[\n";
+            allRecordedStrokes.forEach((stroke, index) => {
+                const id = index + 1;
+                const guessedName = guessStrokeName(stroke);
+                const animal = animalList[index % animalList.length];
+                const pointsLine = JSON.stringify(stroke);
+                
+                code += `    { id: ${id}, name: "${guessedName}", points: ${pointsLine}, info: "第 ${id} 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "${animal}" }${index === allRecordedStrokes.length - 1 ? '' : ','}\n`;
+            });
+            code += "]";
+            outputBox.innerText = code;
+        }
+
+        // ↩️ 新增：退回上一步函式
+        function undoLastStroke() {
+            if (allRecordedStrokes.length > 0) {
+                allRecordedStrokes.pop(); // 移除最後一筆
+                renderHistory();          // 重新繪製畫布上的歷史軌跡
+                generateJSONCode();       // 重新生成一整行的程式碼
+            }
+        }
+
+        function clearCanvas() {
+            allRecordedStrokes = [];
+            historyStrokes.innerHTML = '';
+            currentPath.setAttribute('d', '');
+            generateJSONCode();
+            undoBtn.disabled = true;
+        }
+
+        function copyCode() {
+            if(allRecordedStrokes.length === 0) {
+                alert('💡 目前還沒有劃記任何筆畫喔！');
+                return;
+            }
+            navigator.clipboard.writeText(outputBox.innerText);
+            alert('📋 精準排版程式碼已複製！可以秒貼至網頁中！');
+        }
+
+        svg.addEventListener('mousedown', onStart);
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onEnd);
+
+        svg.addEventListener('touchstart', onStart, {passive: false});
+        window.addEventListener('touchmove', onMove, {passive: false});
+        window.addEventListener('touchend', onEnd);
+    </script>
+</body>
+</html>

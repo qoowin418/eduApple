@@ -11,6 +11,7 @@
             --accent: #f57900;
             --bg-color: #f3f8f2;
             --grid-color: #edd400;
+            --left-panel-width: 280px;
         }
 
         * {
@@ -26,96 +27,177 @@
             background-color: var(--bg-color);
             color: #2e3436;
             display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ================= 左側：操作與控制面板 ================= */
+        .left-panel {
+            width: var(--left-panel-width);
+            background-color: #ffffff;
+            border-right: 4px solid #c0a080;
+            display: flex;
             flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
+            padding: 20px 15px;
+            height: 100%;
+            box-shadow: 3px 0 10px rgba(0,0,0,0.05);
+            z-index: 10;
         }
 
-        header {
-            text-align: center;
-            margin-top: 15px;
-        }
-
-        h1 {
-            margin: 5px 0;
+        header h1 {
+            margin: 0;
             color: var(--primary);
-            font-size: 28px;
+            font-size: 24px;
+            text-align: center;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
         }
 
         .subtitle {
-            font-size: 14px;
+            font-size: 12px;
             color: #555753;
-            margin-bottom: 10px;
+            text-align: center;
+            margin: 5px 0 15px 0;
         }
 
-        /* 新增：選字按鈕區域外框 */
-        .word-selector-container {
-            width: 100%;
-            max-width: 600px;
-            padding: 0 10px;
-            margin-bottom: 10px;
+        /* 左側：選字區域（縮小高度、直向排列） */
+        .section-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #c0a080;
+            margin-bottom: 8px;
+            border-left: 4px solid #c0a080;
+            padding-left: 6px;
         }
 
-        /* 新增：選字按鈕滾動條區 */
-        .word-tabs {
-            display: flex;
+        .word-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
             gap: 8px;
-            overflow-x: auto;
-            padding: 5px 2px;
-            scrollbar-width: thin;
-        }
-
-        .word-tabs::-webkit-scrollbar {
-            height: 6px;
-        }
-        .word-tabs::-webkit-scrollbar-thumb {
-            background: #c0a080;
-            border-radius: 3px;
+            max-height: 160px;
+            overflow-y: auto;
+            padding-right: 4px;
+            margin-bottom: 20px;
         }
 
         .word-btn {
             background-color: #ffffff;
             border: 2px solid #c0a080;
             color: #2e3436;
-            padding: 6px 14px;
-            font-size: 16px;
+            padding: 8px 0;
+            font-size: 18px;
             font-weight: bold;
-            border-radius: 15px;
+            border-radius: 10px;
             cursor: pointer;
-            white-space: nowrap;
             transition: all 0.2s ease;
+            text-align: center;
         }
 
         .word-btn.active {
             background-color: #c0a080;
             color: white;
             transform: scale(1.05);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
         }
 
-        .main-container {
+        /* 左側：狀態與提示區域 */
+        .status-container {
+            flex: 1;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            width: 100%;
-            max-width: 600px;
-            padding: 10px;
+            gap: 10px;
         }
 
-        /* 填字米字格區域 */
+        .status-bar {
+            font-size: 15px;
+            font-weight: bold;
+            color: var(--primary);
+            background-color: #eef4ec;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #d3d7cf;
+        }
+
+        .info-panel {
+            background-color: #f9faf9;
+            border-left: 5px solid var(--primary);
+            padding: 12px;
+            border-radius: 0 8px 8px 0;
+            font-size: 14px;
+            color: #2e3436;
+            line-height: 1.5;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        /* 左側：控制按鈕群 */
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: auto;
+            padding-top: 15px;
+            border-top: 2px dashed #e8e8e8;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .control-row button {
+            flex: 1;
+        }
+
+        button.action-btn {
+            background-color: #ffffff;
+            border: 2px solid #d3d7cf;
+            color: #2e3436;
+            padding: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        button.action-btn:hover:not(:disabled) {
+            background-color: var(--secondary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        button.action-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        button.primary-btn {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* ================= 右側：超大練習畫布區 ================= */
+        .main-layout {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            height: 100%;
+        }
+
+        /* 放大至 600x600 的黃金練習比例 */
         .canvas-container {
             position: relative;
-            width: 360px;
-            height: 360px;
+            width: 600px;
+            height: 600px;
             background-color: #ffffff;
-            border: 8px solid #c0a080;
-            border-radius: 10px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            border: 10px solid #c0a080;
+            border-radius: 16px;
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
             overflow: hidden;
         }
 
-        /* 米字格背景線 */
         .mi-grid {
             position: absolute;
             top: 0;
@@ -128,19 +210,18 @@
         .mi-line {
             position: absolute;
             stroke: var(--grid-color);
-            stroke-width: 1.5;
-            stroke-dasharray: 4 4;
+            stroke-width: 2.5;
+            stroke-dasharray: 6 6;
             opacity: 0.6;
         }
 
         .mi-border-cross {
             position: absolute;
             stroke: var(--grid-color);
-            stroke-width: 2;
-            opacity: 0.4;
+            stroke-width: 3;
+            opacity: 0.5;
         }
 
-        /* 繪圖與互動層 */
         #strokeSvg {
             position: absolute;
             top: 0;
@@ -150,24 +231,20 @@
             z-index: 2;
         }
 
-        /* 已完成筆畫與參考底字 */
-        #bgStrokes path {
-            transition: stroke 0.3s;
-        }
-
-        /* 角色與起終點標示 */
+        /* 元素與標記 */
         .marker {
             position: absolute;
-            width: 32px;
-            height: 32px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
-            transform: translate(-15px, -15px);
+            transform: translate(-20px, -20px);
             z-index: 10;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+            font-size: 22px;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
 
         .start-marker {
@@ -179,98 +256,32 @@
         }
 
         .cute-animal {
-            width: 45px;
-            height: 45px;
+            width: 56px;
+            height: 56px;
             position: absolute;
-            transform: translate(-22px, -22px);
+            transform: translate(-28px, -28px);
             z-index: 11;
             pointer-events: none;
             transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         @keyframes pulse {
-            0% { transform: translate(-15px, -15px) scale(1); box-shadow: 0 0 0 0 rgba(52, 101, 164, 0.7); }
-            70% { transform: translate(-15px, -15px) scale(1.15); box-shadow: 0 0 0 10px rgba(52, 101, 164, 0); }
-            100% { transform: translate(-15px, -15px) scale(1); box-shadow: 0 0 0 0 rgba(52, 101, 164, 0); }
+            0% { transform: translate(-20px, -20px) scale(1); box-shadow: 0 0 0 0 rgba(52, 101, 164, 0.7); }
+            70% { transform: translate(-20px, -20px) scale(1.15); box-shadow: 0 0 0 12px rgba(52, 101, 164, 0); }
+            100% { transform: translate(-20px, -20px) scale(1); box-shadow: 0 0 0 0 rgba(52, 101, 164, 0); }
         }
 
-        /* 控制面板 */
-        .control-panel {
-            margin-top: 20px;
-            background: #ffffff;
-            padding: 15px 20px;
-            border-radius: 30px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-        }
-
-        button {
-            background-color: #ffffff;
-            border: 2px solid #d3d7cf;
-            color: #2e3436;
-            padding: 8px 16px;
-            font-size: 15px;
-            font-weight: bold;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        button:hover:not(:disabled) {
-            background-color: var(--secondary);
-            color: white;
-            border-color: var(--primary);
-            transform: translateY(-2px);
-        }
-
-        button:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        button.primary-btn {
-            background-color: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
-
-        /* 狀態與訊息列 */
-        .status-bar {
-            margin-top: 15px;
-            font-size: 16px;
-            font-weight: bold;
-            color: #4e9a06;
-            height: 24px;
-            text-align: center;
-        }
-
-        .info-panel {
-            margin-top: 10px;
-            background-color: #eef4ec;
-            border-left: 5px solid var(--primary);
-            padding: 10px 15px;
-            border-radius: 0 10px 10px 0;
-            font-size: 14px;
-            color: #2e3436;
-            width: 100%;
-            line-height: 1.5;
-        }
-
-        /* 勝利慶祝動畫 */
+        /* 通關慶祝層 */
         .success-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255,255,255,0.85);
+            background: rgba(255,255,255,0.92);
             z-index: 100;
             display: flex;
             flex-direction: column;
@@ -287,125 +298,291 @@
         }
 
         .success-title {
-            font-size: 32px;
+            font-size: 34px;
             color: var(--accent);
             font-weight: bold;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         .party-animal {
-            font-size: 50px;
+            font-size: 60px;
             animation: bounce 0.6s infinite alternate;
         }
 
         @keyframes bounce {
             from { transform: translateY(0); }
-            to { transform: translateY(-20px); }
+            to { transform: translateY(-25px); }
         }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>🐢 漢字筆順大冒險 🐢</h1>
-        <div class="subtitle">根據標準字體精密校對版：沿著藍點寫完，送小可愛回家吧！</div>
-    </header>
+    <div class="left-panel">
+        <header>
+            <h1>🐢 筆順大冒險 🐢</h1>
+            <div class="subtitle">操作放左邊，右手練習不遮擋！</div>
+        </header>
 
-    <div class="word-selector-container">
-        <div class="word-tabs" id="wordTabs">
+        <div class="section-title">選擇冒險關卡</div>
+        <div class="word-selector" id="wordSelector">
             <button class="word-btn active" onclick="switchWord('word1')">龜</button>
             <button class="word-btn" onclick="switchWord('word2')">我</button>
-            <button class="word-btn" onclick="switchWord('word3')">字三</button>
-            <button class="word-btn" onclick="switchWord('word4')">字四</button>
-            <button class="word-btn" onclick="switchWord('word5')">字五</button>
-            <button class="word-btn" onclick="switchWord('word6')">字六</button>
-            <button class="word-btn" onclick="switchWord('word7')">字七</button>
-            <button class="word-btn" onclick="switchWord('word8')">字八</button>
-            <button class="word-btn" onclick="switchWord('word9')">字九</button>
-            <button class="word-btn" onclick="switchWord('word10')">字十</button>
+            <button class="word-btn" onclick="switchWord('word3')">龍</button>
+            <button class="word-btn" onclick="switchWord('word4')">謙</button>
+            <button class="word-btn" onclick="switchWord('word5')">熙</button>
+            <button class="word-btn" onclick="switchWord('word6')">羹</button>
+            <button class="word-btn" onclick="switchWord('word7')">鬱</button>
+            <button class="word-btn" onclick="switchWord('word8')">瑰</button>
+            <button class="word-btn" onclick="switchWord('word9')">犧</button>
+            <button class="word-btn" onclick="switchWord('word10')">薰</button>
+        </div>
+
+        <div class="status-container">
+            <div class="section-title">目前進度</div>
+            <div class="status-bar" id="statusBar">準備冒險！</div>
+
+            <div class="section-title">小老師提示</div>
+            <div class="info-panel" id="infoPanel">
+                <strong>💡 筆畫教學：</strong><br><span id="strokeInstruction">載入中...</span>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div class="control-row">
+                <button id="prevBtn" class="action-btn" onclick="stepPrevious()">⏮ 上一步</button>
+                <button id="nextBtn" class="action-btn" onclick="stepNext()">跳過 ⏭</button>
+            </div>
+            <button id="demoBtn" class="action-btn primary-btn" onclick="playCurrentDemo()">▶ 播放動畫示範</button>
+            <button id="resetBtn" class="action-btn" onclick="resetAdventure()">本字重來 🔄</button>
         </div>
     </div>
 
-    <div class="main-container">
+    <div class="main-layout">
         <div class="canvas-container" id="canvasContainer">
             <svg class="mi-grid">
-                <line x1="0" y1="0" x2="360" y2="360" class="mi-line"></line>
-                <line x1="360" y1="0" x2="0" y2="360" class="mi-line"></line>
-                <line x1="180" y1="0" x2="180" y2="360" class="mi-border-cross"></line>
-                <line x1="0" y1="180" x2="360" y2="180" class="mi-border-cross"></line>
+                <line x1="0" y1="0" x2="600" y2="600" class="mi-line"></line>
+                <line x1="600" y1="0" x2="0" y2="600" class="mi-line"></line>
+                <line x1="300" y1="0" x2="300" y2="600" class="mi-border-cross"></line>
+                <line x1="0" y1="300" x2="600" y2="300" class="mi-border-cross"></line>
             </svg>
 
             <svg id="strokeSvg">
-                <g id="bgStrokes" opacity="0.12" fill="none" stroke="#2e3436" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"></g>
-                <g id="doneStrokes" fill="none" stroke="#4e9a06" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"></g>
-                <path id="guideTrack" fill="none" stroke="#729fcf" stroke-width="16" stroke-linecap="round" opacity="0.3" stroke-dasharray="4 6"></path>
-                <path id="userTrack" fill="none" stroke="#ef2929" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"></path>
+                <g id="bgStrokes" opacity="0.13" fill="none" stroke="#2e3436" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"></g>
+                <g id="doneStrokes" fill="none" stroke="#4e9a06" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"></g>
+                <path id="guideTrack" fill="none" stroke="#729fcf" stroke-width="28" stroke-linecap="round" opacity="0.4" stroke-dasharray="6 8"></path>
+                <path id="userTrack" fill="none" stroke="#ef2929" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"></path>
             </svg>
 
             <div id="interactiveElements"></div>
 
             <div class="success-overlay" id="successOverlay">
                 <div class="party-animal">🎉🐱🐶🐰🦊🐻🎉</div>
-                <div class="success-title">完美通關！筆順完全正確！</div>
-                <button class="primary-btn" onclick="resetAdventure()">再玩一次 🔄</button>
+                <div class="success-title">神奇魔法！全部寫對了！</div>
+                <button class="action-btn primary-btn" style="font-size:18px; padding:10px 25px;" onclick="resetAdventure()">再挑戰一次 🔄</button>
             </div>
-        </div>
-
-        <div class="status-bar" id="statusBar">準備冒險！請點擊藍色起點開始</div>
-
-        <div class="control-panel">
-            <button id="prevBtn" onclick="stepPrevious()">⏮ 上一步</button>
-            <button id="demoBtn" onclick="playCurrentDemo()">▶ 播放示範</button>
-            <button id="nextBtn" onclick="stepNext()">跳過此步 ⏭</button>
-            <button id="resetBtn" onclick="resetAdventure()">重來 🔄</button>
-        </div>
-
-        <div class="info-panel" id="infoPanel">
-            <strong>💡 當前筆畫提示：</strong><span id="strokeInstruction">加載中...</span>
         </div>
     </div>
 
     <script>
-        // 資料結構重構：將多個字的資料集中管理
+        // 完全對齊您 App 灰色字型、並完美放大至 600x600 的高解析度精準資料集
         const allWordsData = {
             word1: [
-                { id: 1, name: "撇", points: [[150, 25], [82, 92]], info: "第 1 筆：從最上方正中往左下寫一小撇（龜頭冠部）", animal: "🐱" },
-                { id: 2, name: "橫折", points: [[142, 60], [210, 42], [140, 95]], info: "第 2 筆：橫折，構成冠部下方的折線", animal: "🐶" },
-                { id: 3, name: "豎", points: [[91, 102], [110, 142]], info: "第 3 筆：中間偏左下，畫一條短短的垂直豎", animal: "🐰" },
-                { id: 4, name: "橫折", points: [[110, 107], [252, 90], [230, 128]], info: "第 4 筆：橫折，做出中間圍欄框的右上角", animal: "🦊" },
-                { id: 5, name: "橫", points: [[114, 137], [165, 133]], info: "第 5 筆：在中間左側補上一小橫線", animal: "🐻" },
-                { id: 6, name: "橫", points: [[203, 128], [252, 125]], info: "第 6 筆：在中間右側補上一小橫線", animal: "🦁" },
-                { id: 7, name: "豎", points: [[188, 107], [188, 250]], info: "第 7 筆：右半部中間，垂直向下直立劃一長豎", animal: "🐸" },
-                { id: 8, name: "豎折長豎外殼", points: [[145, 110], [145, 275], [168, 305], [250, 308], [300, 292], [298, 245]], info: "第 8 筆：【關鍵大筆畫】從中間偏左長豎直下、順著底部往右繞大彎，最後往右上拉起（龜殼底與尾巴）", animal: "🐵" },
-                { id: 9, name: "橫折", points: [[79, 163], [130, 153], [120, 192]], info: "第 9 筆：左側上方第一個側龜甲裂紋，橫折進去", animal: "🐷" },
-                { id: 10, name: "橫折", points: [[62, 183], [260, 155], [240, 252]], info: "第 10 筆：【橫跨長畫】從最左邊橫切過去、再向右下折出右側大裙邊", animal: "🐧" },
-                { id: 11, name: "橫", points: [[82, 203], [122, 198]], info: "第 11 筆：左側上方與中間夾縫處的短橫線", animal: "🐨" },
-                { id: 12, name: "橫折", points: [[79, 230], [132, 218], [122, 255]], info: "第 12 筆：左側下方第二個側龜甲裂紋，橫折進去", animal: "🐥" },
-                { id: 13, name: "橫", points: [[58, 255], [240, 235]], info: "第 13 筆：【底部橫跨】從左下一直橫切貫穿到右側包圍外框", animal: "🦉" },
-                { id: 14, name: "橫", points: [[82, 275], [130, 271]], info: "第 14 筆：左下角最後一個底部的短橫線", animal: "🦇" },
-                { id: 15, name: "撇 (乂右半)", points: [[235, 175], [202, 235]], info: "第 15 筆：右下方內部「乂」字結構，先寫往左下的短撇", animal: "🐹" },
-                { id: 16, name: "捺 (乂左半)", points: [[207, 180], [245, 230]], info: "第 16 筆：最後一筆！從左上往右下捺一筆交叉，大功告成！", animal: "🐢" }
+                { id: 1, name: "撇", points: [[250, 41], [136, 152]], info: "第 1 筆：從最上方正中往左下寫一小撇（龜頭冠部）", animal: "🐱" },
+                { id: 2, name: "橫折", points: [[236, 100], [350, 70], [233, 157]], info: "第 2 筆：橫折，構成冠部下方的折線", animal: "🐶" },
+                { id: 3, name: "豎", points: [[151, 169], [182, 236]], info: "第 3 筆：中間偏左下，畫一條短短的垂直豎", animal: "🐰" },
+                { id: 4, name: "橫折", points: [[182, 178], [420, 150], [383, 212]], info: "第 4 筆：橫折，做出中間圍欄框的右上角", animal: "🦊" },
+                { id: 5, name: "橫", points: [[190, 228], [275, 221]], info: "第 5 筆：在中間左側補上一小橫線", animal: "🐻" },
+                { id: 6, name: "橫", points: [[337, 212], [420, 208]], info: "第 6 筆：在中間右側補上一小橫線", animal: "🦁" },
+                { id: 7, name: "豎", points: [[313, 178], [313, 416]], info: "第 7 筆：右半部中間，垂直向下直立劃一長豎", animal: "🐸" },
+                { id: 8, name: "豎折長豎外殼", points: [[241, 182], [241, 457], [280, 508], [416, 512], [499, 486], [496, 408]], info: "第 8 筆：長豎直下、順著底部往右繞大彎，最後往右上拉起（龜殼與尾巴）", animal: "🐵" },
+                { id: 9, name: "橫折", points: [[131, 271], [216, 254], [199, 319]], info: "第 9 筆：左側上方第一個側龜甲裂紋，橫折進去", animal: "🐷" },
+                { id: 10, name: "橫折", points: [[103, 305], [433, 258], [400, 420]], info: "第 10 筆：從最左邊橫切過去、再向右下折出右側大裙邊", animal: "🐧" },
+                { id: 11, name: "橫", points: [[136, 337], [203, 330]], info: "第 11 筆：左側上方與中間夾縫處的短橫線", animal: "🐨" },
+                { id: 12, name: "橫折", points: [[131, 383], [220, 362], [203, 425]], info: "第 12 筆：左側下方第二個側龜甲裂紋，橫折進去", animal: "🐥" },
+                { id: 13, name: "橫", points: [[96, 425], [400, 391]], info: "第 13 筆：從左下一直橫切貫穿到右側包圍外框", animal: "🦉" },
+                { id: 14, name: "橫", points: [[136, 457], [216, 451]], info: "第 14 筆：左下角最後一個底部的短橫線", animal: "🦇" },
+                { id: 15, name: "撇", points: [[391, 292], [336, 391]], info: "第 15 筆：右下方內部「乂」字結構，先寫往左下的短撇", animal: "🐹" },
+                { id: 16, name: "捺", points: [[344, 300], [408, 383]], info: "第 16 筆：最後一筆！從左上往右下捺一筆交叉，大功告成！", animal: "🐢" }
             ],
             word2: [
-                { id: 1, name: "撇", points: [[158, 120], [70, 150]], info: "第 1 筆：由右上往左下寫一平撇", animal: "🐱" },
-                { id: 2, name: "橫", points: [[62, 203], [273, 154]], info: "第 2 筆：由左向右寫一長橫，微微向上傾斜", animal: "🐶" },
-                { id: 3, name: "豎鉤", points: [[142, 137], [132, 298], [98, 271]], info: "第 3 筆：垂直向下直書寫豎，到底向左上俐落帶鉤", animal: "🐰" },
-                { id: 4, name: "提", points: [[46, 258], [173, 200]], info: "第 4 筆：從左下角順勢往右上斜斜挑起（提畫）", animal: "🦊" },
-                { id: 5, name: "斜鉤", points: [[196, 44], [254, 285], [314, 298], [311, 237]], info: "第 5 筆：【關鍵大弧度】從上方順勢向右下畫出長弧，到底往正上方鉤起", animal: "🐻" },
-                { id: 6, name: "點", points: [[236, 80], [271, 114]], info: "第 6 筆：注意喔！先在右上方點下一點", animal: "🦁" },
-                { id: 7, name: "撇", points: [[283, 192], [163, 281]], info: "第 7 筆：最後一筆！從右上向左下撇出撇畫，大功告成！", animal: "🐢" }
+                { id: 1, name: "撇", points: [[264, 199], [116, 250]], info: "第 1 筆：由右上往左下寫一平撇", animal: "🐱" },
+                { id: 2, name: "橫", points: [[103, 337], [455, 256]], info: "第 2 筆：由左向右寫一長橫，微微向上傾斜", animal: "🐶" },
+                { id: 3, name: "豎鉤", points: [[236, 228], [220, 496], [163, 451]], info: "第 3 筆：垂直向下直書寫豎，到底向左上俐落帶鉤", animal: "🐰" },
+                { id: 4, name: "提", points: [[76, 430], [288, 332]], info: "第 4 筆：從左下角順勢往右上斜斜挑起（提畫）", animal: "🦊" },
+                { id: 5, name: "斜鉤", points: [[326, 73], [422, 474], [523, 496], [517, 395]], info: "第 5 筆：從上方順勢向右下畫出長弧，到底往正上方鉤起", animal: "🐻" },
+                { id: 6, name: "點", points: [[392, 133], [451, 190]], info: "第 6 筆：注意喔！先在右上方點下一點", animal: "🦁" },
+                { id: 7, name: "撇", points: [[472, 319], [271, 468]], info: "第 7 筆：最後一筆！從右上向左下撇出撇畫，大功告成！", animal: "🐢" }
             ],
-            word3: [], // 預留字三
-            word4: [], // 預留字四
-            word5: [], // 預留字五
-            word6: [], // 預留字六
-            word7: [], // 預留字七
-            word8: [], // 預留字八
-            word9: [], // 預留字九
-            word10: [] // 預留字十
+            word3: [
+                { id: 1, name: "豎", points: [[119,43],[125,60],[133,77]], info: "第 1 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐱" },
+                { id: 2, name: "提", points: [[77,110],[104,105],[125,103],[143,101],[165,98],[184,95],[202,94]], info: "第 2 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐶" },
+                { id: 3, name: "豎", points: [[107,138],[110,157],[113,177],[115,196]], info: "第 3 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐰" },
+                { id: 4, name: "豎", points: [[189,137],[184,158],[179,176],[171,194]], info: "第 4 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦊" },
+                { id: 5, name: "提", points: [[54,234],[75,233],[98,231],[119,227],[144,224],[164,220],[184,218],[205,216],[223,215]], info: "第 5 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐻" },
+                { id: 6, name: "豎", points: [[102,295],[102,314],[102,334],[102,358],[102,383],[102,404],[101,423],[93,447],[87,467],[79,485],[67,500],[53,513]], info: "第 6 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦁" },
+                { id: 7, name: "豎", points: [[110,303],[130,303],[150,298],[167,291],[184,283],[202,281],[213,298],[213,321],[213,346],[213,366],[213,387],[213,408],[213,428],[213,448],[213,469],[213,489],[213,508],[213,527],[198,516],[182,506]], info: "第 7 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐢" },
+                { id: 8, name: "提", points: [[117,373],[137,370],[156,368],[175,366],[193,362],[212,362]], info: "第 8 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐸" },
+                { id: 9, name: "提", points: [[115,441],[134,438],[153,434],[175,431],[193,426],[211,425]], info: "第 9 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐵" },
+                { id: 10, name: "提", points: [[344,102],[366,94],[384,90],[402,89],[421,89]], info: "第 10 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐧" },
+                { id: 11, name: "豎", points: [[337,50],[337,73],[337,96],[337,115],[337,135],[336,153],[348,169],[371,167],[389,161],[408,158],[427,154],[445,156],[453,173],[453,192],[453,211],[453,232],[447,249]], info: "第 11 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐨" },
+                { id: 12, name: "提", points: [[339,268],[357,267],[376,263],[394,261],[412,259],[431,258],[449,257]], info: "第 12 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐥" },
+                { id: 13, name: "橫", points: [[343,282],[343,308],[343,327],[343,351],[343,370],[343,390],[343,411],[343,433],[343,454],[343,473],[343,494],[348,512],[367,525],[389,529],[408,529],[427,529],[449,530],[472,530],[493,530],[511,528],[528,522],[540,507],[539,488],[537,470]], info: "第 13 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦉" },
+                { id: 14, name: "提", points: [[362,334],[381,332],[400,330],[420,329],[440,329],[459,329]], info: "第 14 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦇" },
+                { id: 15, name: "提", points: [[357,406],[380,404],[399,402],[418,401],[437,401],[456,401]], info: "第 15 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐹" },
+                { id: 16, name: "提", points: [[361,478],[388,476],[413,474],[431,473],[451,473],[469,474]], info: "第 16 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐲" }
+            ],
+            word4: [
+    { id: 1, name: "豎", points: [[126,114],[127,133],[132,152]], info: "第 1 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐱" },
+    { id: 2, name: "提", points: [[55,191],[79,183],[98,175],[126,171],[145,168],[167,164],[187,160]], info: "第 2 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐶" },
+    { id: 3, name: "提", points: [[101,261],[119,255],[143,250],[163,245]], info: "第 3 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐰" },
+    { id: 4, name: "提", points: [[110,355],[129,348],[161,339],[180,336]], info: "第 4 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦊" },
+    { id: 5, name: "豎", points: [[66,434],[78,461],[83,480],[88,498]], info: "第 5 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐻" },
+    { id: 6, name: "橫", points: [[82,440],[105,435],[139,427],[159,419],[179,416],[197,414],[198,440],[187,460],[178,479]], info: "第 6 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦁" },
+    { id: 7, name: "提", points: [[98,502],[131,496],[155,494],[175,491]], info: "第 7 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐢" },
+    { id: 8, name: "豎", points: [[306,57],[311,79],[319,99],[325,116]], info: "第 8 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐸" },
+    { id: 9, name: "豎", points: [[452,38],[438,56],[431,74],[420,91],[407,108]], info: "第 9 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐵" },
+    { id: 10, name: "提", points: [[263,144],[286,143],[336,139],[357,135],[387,129],[405,126],[426,123],[447,120],[469,119]], info: "第 10 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐧" },
+    { id: 11, name: "橫", points: [[277,223],[310,218],[345,213],[375,207],[396,204],[416,199],[435,195],[453,197],[463,214],[463,235],[463,258],[462,277],[456,299],[452,318]], info: "第 11 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐨" },
+    { id: 12, name: "提", points: [[259,297],[283,295],[303,293],[325,289],[346,287],[375,282],[400,275],[428,269],[449,265],[476,262],[500,259],[525,259]], info: "第 12 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐥" },
+    { id: 13, name: "提", points: [[296,344],[323,342],[343,339],[371,335],[391,331],[409,326],[429,320],[447,319]], info: "第 13 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦉" },
+    { id: 14, name: "豎", points: [[341,161],[343,179],[343,212],[343,248],[343,279],[343,307],[343,331],[343,352],[343,375],[343,395],[343,415],[343,438],[343,458],[343,479],[343,500],[343,521],[344,541]], info: "第 14 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦇" },
+    { id: 15, name: "豎", points: [[419,148],[419,168],[419,206],[419,226],[419,262],[419,294],[419,334],[419,361],[419,387],[419,416],[419,438],[419,463],[419,488],[419,507],[419,527],[419,546]], info: "第 15 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐹" },
+    { id: 16, name: "豎", points: [[340,367],[331,391],[322,408],[313,426],[303,446],[293,461],[280,477],[263,491],[248,503],[232,515]], info: "第 16 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐲" },
+    { id: 17, name: "豎", points: [[431,337],[436,361],[447,385],[460,408],[471,428],[481,443],[495,463],[507,479],[520,498],[532,512],[547,524]], info: "第 17 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐯" }
+            ], 
+            word5: [
+    { id: 1, name: "提", points: [[79,104],[113,97],[139,93],[159,91],[180,88],[200,85],[220,81],[241,80],[259,82]], info: "第 1 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐱" },
+    { id: 2, name: "豎", points: [[188,106],[187,128],[181,146],[174,163]], info: "第 2 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐶" },
+    { id: 3, name: "豎", points: [[119,199],[130,217],[136,235]], info: "第 3 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐰" },
+    { id: 4, name: "橫", points: [[140,204],[170,190],[199,187],[217,183],[234,194],[234,216],[227,235],[215,254]], info: "第 4 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦊" },
+    { id: 5, name: "提", points: [[142,265],[177,259],[199,255],[222,252]], info: "第 5 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐻" },
+    { id: 6, name: "豎", points: [[188,274],[183,303],[180,326],[178,345]], info: "第 6 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦁" },
+    { id: 7, name: "豎", points: [[84,115],[84,139],[84,159],[84,182],[84,201],[84,224],[84,246],[84,265],[84,285],[84,305],[84,325],[84,345],[82,364],[101,368],[125,364],[146,361],[167,360],[186,360],[207,360],[228,361],[249,361],[270,361]], info: "第 7 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐢" },
+    { id: 8, name: "橫", points: [[315,123],[338,115],[360,108],[378,104],[396,101],[415,98],[436,100],[446,117],[446,142],[444,163],[442,181],[437,199]], info: "第 8 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐸" },
+    { id: 9, name: "提", points: [[323,219],[350,216],[376,212],[394,211],[415,207],[433,205]], info: "第 9 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐵" },
+    { id: 10, name: "豎", points: [[319,135],[318,153],[318,175],[318,195],[318,214],[316,235],[315,255],[313,276],[311,294],[311,313],[311,332],[327,344],[347,346],[367,349],[387,351],[409,354],[429,354],[448,354],[467,354],[476,337],[476,318],[473,299]], info: "第 10 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐧" },
+    { id: 11, name: "豎", points: [[91,443],[86,463],[80,483],[71,499],[62,515]], info: "第 11 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐨" },
+    { id: 12, name: "豎", points: [[194,449],[199,471],[203,489],[205,507]], info: "第 12 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐥" },
+    { id: 13, name: "豎", points: [[323,443],[334,462],[342,480],[348,501]], info: "第 13 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦉" },
+    { id: 14, name: "豎", points: [[461,435],[477,451],[491,468],[503,483],[513,498]], info: "第 14 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦇" }
+            ], 
+            word6: [
+    { id: 1, name: "橫", points: [[219,36],[235,45],[246,60]], info: "第 1 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐱" },
+    { id: 2, name: "橫", points: [[366,23],[342,33],[327,43],[316,58]], info: "第 2 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐶" },
+    { id: 3, name: "提", points: [[201,87],[219,85],[239,82],[259,81],[283,78],[303,74],[324,74],[343,74],[362,74]], info: "第 3 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐰" },
+    { id: 4, name: "提", points: [[202,145],[229,143],[251,141],[281,136],[299,134],[319,133],[343,133],[362,133]], info: "第 4 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦊" },
+    { id: 5, name: "豎", points: [[288,95],[287,115],[287,134],[287,153],[286,171]], info: "第 5 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐻" },
+    { id: 6, name: "提", points: [[145,197],[168,196],[188,195],[206,191],[227,191],[245,189],[263,185],[288,182],[307,180],[331,179],[354,179],[375,179],[399,179],[417,180],[437,183],[456,183]], info: "第 6 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦁" },
+    { id: 7, name: "橫", points: [[167,239],[151,248],[138,263]], info: "第 7 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐢" },
+    { id: 8, name: "豎", points: [[244,240],[249,261]], info: "第 8 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐸" },
+    { id: 9, name: "豎", points: [[340,234],[352,253]], info: "第 9 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐵" },
+    { id: 10, name: "橫", points: [[415,227],[435,235],[449,247]], info: "第 10 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐧" },
+    { id: 11, name: "橫", points: [[230,287],[253,295],[267,307]], info: "第 11 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐨" },
+    { id: 12, name: "橫", points: [[365,283],[349,296],[335,308],[319,317]], info: "第 12 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐥" },
+    { id: 13, name: "提", points: [[211,336],[229,333],[256,325],[276,324],[300,322],[322,319],[343,316],[362,317],[383,317]], info: "第 13 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦉" },
+    { id: 14, name: "提", points: [[216,385],[239,379],[263,371],[284,368],[303,367],[324,367],[350,367],[373,367],[392,367]], info: "第 14 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦇" },
+    { id: 15, name: "豎", points: [[303,340],[303,361],[303,380],[303,399],[303,418]], info: "第 15 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐹" },
+    { id: 16, name: "提", points: [[171,440],[192,433],[215,431],[233,428],[254,427],[273,423],[295,423],[315,420],[344,420],[367,420],[386,419],[406,418],[424,420],[444,423]], info: "第 16 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐲" },
+    { id: 17, name: "提", points: [[141,501],[163,494],[187,493],[216,492],[241,488],[260,485],[279,482],[297,479],[318,476],[339,475],[359,475],[379,474],[401,472],[423,472],[443,471],[461,469],[485,469],[463,480]], info: "第 17 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐯" },
+    { id: 18, name: "橫", points: [[312,444],[307,467],[295,489],[287,507],[277,523],[258,538],[240,550],[222,560],[199,567],[181,571]], info: "第 18 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐳" },
+    { id: 19, name: "橫", points: [[319,510],[333,522],[351,536],[367,547],[383,557],[400,565],[417,571]], info: "第 19 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐦" }
+            ], 
+            word7: [
+    { id: 1, name: "豎", points: [[227,27],[227,46],[224,64],[215,80]], info: "第 1 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐱" },
+    { id: 2, name: "提", points: [[240,66],[257,59],[275,55],[296,55],[315,55]], info: "第 2 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐶" },
+    { id: 3, name: "提", points: [[224,120],[245,118],[265,112],[286,108],[305,107],[326,107]], info: "第 3 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐰" },
+    { id: 4, name: "豎", points: [[283,79],[282,105],[280,123],[280,143],[279,162],[278,180]], info: "第 4 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦊" },
+    { id: 5, name: "橫", points: [[219,167],[223,185],[223,204],[244,206],[266,199],[284,195],[305,188],[324,188]], info: "第 5 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐻" },
+    { id: 6, name: "豎", points: [[342,159],[342,180],[342,199],[342,219]], info: "第 6 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦁" },
+    { id: 7, name: "提", points: [[63,86],[86,80],[112,74],[132,71],[151,68]], info: "第 7 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐢" },
+    { id: 8, name: "豎", points: [[111,27],[110,46],[108,70],[108,90],[108,109],[108,131],[108,151],[108,173],[108,195],[107,214],[107,234]], info: "第 8 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐸" },
+    { id: 9, name: "豎", points: [[102,99],[93,119],[85,139],[75,160],[67,177],[57,194]], info: "第 9 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐵" },
+    { id: 10, name: "豎", points: [[126,122],[135,139],[147,156],[159,171]], info: "第 10 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐧" },
+    { id: 11, name: "提", points: [[390,71],[414,65],[434,61],[451,55],[471,52],[491,52]], info: "第 11 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐨" },
+    { id: 12, name: "豎", points: [[443,21],[443,41],[443,62],[443,87],[443,111],[443,135],[443,154],[443,175],[443,195],[443,214]], info: "第 12 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐥" },
+    { id: 13, name: "豎", points: [[441,72],[435,91],[429,112],[423,129],[413,149],[405,166],[396,183]], info: "第 13 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦉" },
+    { id: 14, name: "橫", points: [[461,112],[475,127],[491,136],[507,145]], info: "第 14 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦇" },
+    { id: 15, name: "豎", points: [[82,251],[79,271],[76,290],[70,307],[61,324]], info: "第 15 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐹" },
+    { id: 16, name: "橫", points: [[95,293],[115,290],[135,286],[157,282],[178,279],[199,276],[218,273],[239,271],[262,271],[283,270],[303,269],[321,268],[346,267],[367,266],[389,262],[411,259],[431,257],[454,253],[478,251],[497,251],[516,252],[517,271],[511,289],[502,305]], info: "第 16 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐲" },
+    { id: 17, name: "豎", points: [[227,319],[217,335],[208,351],[199,368],[188,383],[176,397],[161,407],[143,415]], info: "第 17 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐯" },
+    { id: 18, name: "橫", points: [[154,335],[167,352],[178,368],[195,381],[212,391],[230,397],[249,401]], info: "第 18 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐳" },
+    { id: 19, name: "豎", points: [[183,322],[196,336]], info: "第 19 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐦" },
+    { id: 20, name: "橫", points: [[134,370],[148,382]], info: "第 20 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐼" },
+    { id: 21, name: "橫", points: [[239,367],[253,379]], info: "第 21 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐱" },
+    { id: 22, name: "橫", points: [[197,431],[213,440]], info: "第 22 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐶" },
+    { id: 23, name: "橫", points: [[99,367],[102,388],[104,408],[104,427],[104,447],[104,467],[122,470],[142,466],[163,463],[182,460],[201,455],[220,455],[239,455],[259,452],[280,452]], info: "第 23 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐰" },
+    { id: 24, name: "豎", points: [[289,345],[289,364],[288,383],[287,402],[285,420],[282,439],[282,459]], info: "第 24 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦊" },
+    { id: 25, name: "提", points: [[148,527],[166,521],[188,519],[209,515],[227,513]], info: "第 25 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐻" },
+    { id: 26, name: "橫", points: [[143,495],[143,515],[143,535],[143,555],[141,573],[160,581],[180,577],[201,573],[219,571],[239,567]], info: "第 26 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦁" },
+    { id: 27, name: "橫", points: [[454,311],[443,327],[430,342],[415,355],[399,367],[382,379],[363,388]], info: "第 27 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐢" },
+    { id: 28, name: "橫", points: [[479,402],[456,419],[442,431],[426,442],[407,453],[391,462],[375,471],[358,478]], info: "第 28 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐸" },
+    { id: 29, name: "橫", points: [[503,483],[486,495],[470,506],[455,517],[439,527],[418,537],[402,546],[383,551],[364,556],[347,562]], info: "第 29 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐵" }
+
+            ], 
+        word8: [
+    { id: 1, name: "提", points: [[69,182],[95,173],[113,171],[135,167],[159,163],[179,163]], info: "第 1 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐱" },
+    { id: 2, name: "提", points: [[76,290],[103,279],[131,271],[151,265],[170,263],[190,259]], info: "第 2 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐶" },
+    { id: 3, name: "豎", points: [[138,187],[132,204],[128,232],[125,253],[123,275],[123,295],[123,315],[123,335],[121,355],[119,373]], info: "第 3 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐰" },
+    { id: 4, name: "提", points: [[63,406],[84,392],[103,383],[121,376],[143,365],[162,359],[181,354]], info: "第 4 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦊" },
+    { id: 5, name: "豎", points: [[343,80],[331,94],[322,110],[311,127],[302,143],[287,158]], info: "第 5 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐻" },
+    { id: 6, name: "豎", points: [[232,185],[242,209],[245,229],[247,247],[250,265],[252,283],[254,302],[256,320]], info: "第 6 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦁" },
+    { id: 7, name: "橫", points: [[259,179],[291,171],[323,166],[343,164],[361,162],[383,158],[405,155],[426,154],[445,154],[459,166],[459,187],[455,211],[450,231],[446,251],[439,271],[435,290],[433,308]], info: "第 7 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐢" },
+    { id: 8, name: "提", points: [[264,259],[284,253],[304,247],[324,245],[344,243],[364,241],[384,241],[403,241],[422,241],[442,241]], info: "第 8 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐸" },
+    { id: 9, name: "豎", points: [[354,180],[350,202],[347,224],[345,242],[342,263],[340,283],[338,301],[336,319]], info: "第 9 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐵" },
+    { id: 10, name: "提", points: [[266,332],[290,332],[318,327],[339,325],[362,322],[389,319],[409,315],[427,314]], info: "第 10 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐧" },
+    { id: 11, name: "豎", points: [[313,348],[303,364],[294,380],[285,399],[275,415],[263,431],[250,447],[238,463],[224,477],[208,488],[193,499]], info: "第 11 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐨" },
+    { id: 12, name: "橫", points: [[345,347],[342,369],[339,391],[335,413],[334,431],[334,452],[335,470],[343,489],[358,499],[383,503],[405,505],[430,505],[456,505],[477,503],[499,501],[520,496],[537,490],[532,472]], info: "第 12 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐥" },
+    { id: 13, name: "豎", points: [[432,378],[417,392],[406,408],[392,420],[387,438],[403,451],[429,452],[452,451],[473,444]], info: "第 13 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦉" },
+    { id: 14, name: "豎", points: [[477,427],[487,443],[495,461]], info: "第 14 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦇" }
+
+        ], 
+        word9: [
+    { id: 1, name: "豎", points: [[84,172],[80,194],[76,213],[70,230],[60,248],[50,263]], info: "第 1 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐱" },
+    { id: 2, name: "提", points: [[85,237],[103,235],[124,231],[145,229],[163,226],[181,223],[199,219]], info: "第 2 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐶" },
+    { id: 3, name: "豎", points: [[146,84],[146,114],[146,139],[146,164],[146,183],[146,203],[146,226],[146,248],[146,268],[146,291],[146,310],[146,329],[146,349],[146,377],[146,403],[146,424],[146,445],[146,467],[146,487],[146,506],[146,526]], info: "第 3 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐰" },
+    { id: 4, name: "提", points: [[65,400],[86,382],[107,369],[127,354],[149,339],[168,326],[183,316],[201,306]], info: "第 4 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦊" },
+    { id: 5, name: "豎", points: [[314,69],[323,86],[332,102]], info: "第 5 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐻" },
+    { id: 6, name: "豎", points: [[454,43],[439,60],[427,75],[415,90],[401,103]], info: "第 6 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦁" },
+    { id: 7, name: "提", points: [[268,131],[299,127],[330,117],[351,112],[375,112],[399,112],[417,111],[435,108],[455,105]], info: "第 7 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐢" },
+    { id: 8, name: "提", points: [[281,185],[302,178],[323,175],[345,174],[367,171],[385,169],[403,167],[425,164],[445,160],[463,159]], info: "第 8 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐸" },
+    { id: 9, name: "豎", points: [[370,130],[370,150],[367,170],[364,192],[361,210],[359,228]], info: "第 9 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐵" },
+    { id: 10, name: "提", points: [[283,252],[302,246],[321,241],[339,236],[359,233],[379,232],[398,231],[420,229],[438,227],[458,230],[476,231]], info: "第 10 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐧" },
+    { id: 11, name: "橫", points: [[328,288],[313,300],[296,310]], info: "第 11 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐨" },
+    { id: 12, name: "提", points: [[254,377],[276,375],[296,372],[322,368],[351,363],[374,358],[392,352],[415,347],[436,347],[457,347],[477,343],[500,344]], info: "第 12 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐥" },
+    { id: 13, name: "豎", points: [[324,319],[324,338],[324,359],[324,378],[324,397],[323,416],[323,435]], info: "第 13 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦉" },
+    { id: 14, name: "橫", points: [[315,393],[299,403],[284,418],[267,427]], info: "第 14 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦇" },
+    { id: 15, name: "橫", points: [[343,399],[362,411]], info: "第 15 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐹" },
+    { id: 16, name: "提", points: [[294,460],[313,457],[331,455],[352,452],[370,449]], info: "第 16 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐲" },
+    { id: 17, name: "豎", points: [[321,468],[313,486],[299,501],[322,501],[344,495],[362,491],[379,499],[375,517],[364,534],[351,549],[339,563],[322,555]], info: "第 17 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐯" },
+    { id: 18, name: "豎", points: [[395,283],[398,302],[403,326],[408,345],[414,367],[422,389],[431,407],[439,426],[447,443],[455,463],[467,486],[478,503],[491,518],[509,527],[527,535],[544,541],[550,523],[547,505]], info: "第 18 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐳" },
+    { id: 19, name: "橫", points: [[473,288],[490,297],[502,312]], info: "第 19 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐦" },
+    { id: 20, name: "豎", points: [[515,403],[506,420],[497,438],[487,455],[478,475],[467,491],[455,507],[443,522],[429,535]], info: "第 20 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐼" }
+
+        ],
+        word10:
+        [
+    { id: 1, name: "豎", points: [[173,37],[174,56],[174,75],[174,94]], info: "第 1 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐱" },
+    { id: 2, name: "提", points: [[109,87],[131,76],[152,71],[172,69],[192,67],[210,64]], info: "第 2 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐶" },
+    { id: 3, name: "提", points: [[304,71],[324,68],[344,67],[363,66],[382,66],[407,68]], info: "第 3 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐰" },
+    { id: 4, name: "豎", points: [[355,35],[347,58],[340,77],[334,94]], info: "第 4 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦊" },
+    { id: 5, name: "橫", points: [[302,128],[283,133],[265,138],[247,144],[228,147],[210,151]], info: "第 5 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐻" },
+    { id: 6, name: "提", points: [[91,203],[113,204],[135,201],[161,197],[182,196],[215,195],[239,193],[260,191],[285,187],[319,184],[352,184],[377,184],[398,183],[420,183],[447,183],[468,186],[489,190]], info: "第 6 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦁" },
+    { id: 7, name: "豎", points: [[152,264],[157,287],[164,312],[173,331],[179,348]], info: "第 7 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐢" },
+    { id: 8, name: "橫", points: [[169,267],[191,267],[215,267],[237,265],[255,263],[275,260],[299,259],[318,256],[339,253],[361,253],[382,253],[401,252],[420,252],[421,271],[415,289],[409,307],[403,326],[379,335]], info: "第 8 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐸" },
+    { id: 9, name: "豎", points: [[216,300],[225,316],[236,331]], info: "第 9 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐵" },
+    { id: 10, name: "橫", points: [[354,290],[341,303],[327,315]], info: "第 10 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐧" },
+    { id: 11, name: "提", points: [[193,358],[214,358],[235,358],[256,358],[276,358],[298,358],[316,357],[335,355],[355,351],[373,348],[391,347]], info: "第 11 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐨" },
+    { id: 12, name: "提", points: [[208,418],[231,415],[255,411],[274,408],[298,407],[317,407],[340,406],[359,406],[378,406]], info: "第 12 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐥" },
+    { id: 13, name: "豎", points: [[278,155],[275,178],[273,203],[271,223],[270,247],[270,267],[270,290],[270,312],[270,333],[270,355],[270,378],[270,398],[270,417],[270,437],[269,455],[269,474]], info: "第 13 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦉" },
+    { id: 14, name: "提", points: [[153,490],[177,489],[200,486],[219,483],[239,479],[263,475],[283,472],[303,471],[326,471],[349,467],[370,466],[391,463],[415,463],[433,464],[451,468]], info: "第 14 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🦇" },
+    { id: 15, name: "豎", points: [[154,532],[148,549],[143,567],[128,578]], info: "第 15 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐹" },
+    { id: 16, name: "豎", points: [[244,535],[252,553],[255,571]], info: "第 16 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐲" },
+    { id: 17, name: "豎", points: [[344,535],[358,547],[369,563]], info: "第 17 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐯" },
+    { id: 18, name: "橫", points: [[452,525],[469,535],[487,548],[500,561]], info: "第 18 筆：請沿著虛線平穩滑動到終點小動物吧！", animal: "🐳" }
+]
         };
 
-        let activeWordKey = "word1"; // 當前選擇的字識別碼
+        let activeWordKey = "word1"; 
         let currentStep = 0;
         
         const svg = document.getElementById('strokeSvg');
@@ -420,7 +597,6 @@
 
         let isDrawing = false;
 
-        // 取得當前文字的筆畫陣列
         function getCurrentStrokeData() {
             return allWordsData[activeWordKey] || [];
         }
@@ -429,10 +605,9 @@
             const strokeData = getCurrentStrokeData();
             bgStrokesG.innerHTML = '';
             
-            // 如果此字尚未填寫資料，給予警示提示
             if (strokeData.length === 0) {
-                statusBar.innerText = "此字尚未設定筆順資料喔！";
-                strokeInstruction.innerText = "請點選其他有資料的字（例如：龜）。";
+                statusBar.innerText = "尚未設定資料喔！";
+                strokeInstruction.innerText = "請點選其他有資料的字（例如：龜、我、龍）。";
                 doneStrokesG.innerHTML = '';
                 guideTrack.setAttribute('d', '');
                 interactiveElements.innerHTML = '';
@@ -446,19 +621,14 @@
             renderCurrentStep();
         }
 
-        // 新增：切換字詞的 function
         function switchWord(wordKey) {
             activeWordKey = wordKey;
-            currentStep = 0; // 步數歸零
+            currentStep = 0; 
 
-            // 更新按鈕的選取狀態視覺
             const buttons = document.querySelectorAll('.word-btn');
             buttons.forEach(btn => btn.classList.remove('active'));
             
-            // 根據點擊找到對應的按鈕加上 active class
             event.target.classList.add('active');
-
-            // 關閉成功蓋板並重置畫布
             successOverlay.classList.remove('show');
             init();
         }
@@ -488,7 +658,7 @@
             if (totalStrokes === 0) return;
 
             if (currentStep >= totalStrokes) {
-                statusBar.innerText = "太完美了！全部筆順正確通關！";
+                statusBar.innerText = "太完美了！通關！";
                 successOverlay.classList.add('show');
                 return;
             }
@@ -520,7 +690,7 @@
             animalDiv.className = 'cute-animal';
             animalDiv.style.left = `${endPt[0]}px`;
             animalDiv.style.top = `${endPt[1]}px`;
-            animalDiv.style.fontSize = '32px';
+            animalDiv.style.fontSize = '40px';
             animalDiv.innerText = stroke.animal;
             interactiveElements.appendChild(animalDiv);
 
@@ -546,13 +716,14 @@
                 const clickX = x - rect.left;
                 const clickY = y - rect.top;
 
+                // 配合 600 大畫布，放大起點判定半徑至 55 像素，防呆更好
                 const distToStart = Math.hypot(clickX - startPt[0], clickY - startPt[1]);
-                if (distToStart < 35) {
+                if (distToStart < 55) {
                     isDrawing = true;
                     startTriggered = true;
                     userPoints = [[clickX, clickY]];
                     userTrack.setAttribute('d', getPathD(userPoints));
-                    statusBar.innerText = "抓到起點！滑向小可愛吧！";
+                    statusBar.innerText = "連線中！滑向小動物吧！";
                 }
             }
 
@@ -565,8 +736,9 @@
                 userPoints.push([curX, curY]);
                 userTrack.setAttribute('d', getPathD(userPoints));
 
+                // 終點判定半徑放大至 45 像素
                 const distToEnd = Math.hypot(curX - endPt[0], curY - endPt[1]);
-                if (distToEnd < 30) {
+                if (distToEnd < 45) {
                     validateAndPass();
                 }
             }
@@ -576,7 +748,7 @@
                 isDrawing = false;
                 if (startTriggered) {
                     userTrack.setAttribute('d', '');
-                    statusBar.innerText = "手滑開了！重新從藍色起點連到小可愛吧！";
+                    statusBar.innerText = "歪掉囉！重新起點出發吧！";
                 }
                 startTriggered = false;
             }
@@ -603,10 +775,10 @@
             isDrawing = false;
             const animal = document.querySelector('.cute-animal');
             if (animal) {
-                animal.style.transform = 'translate(-22px, -22px) scale(1.8)';
+                animal.style.transform = 'translate(-28px, -28px) scale(1.8)';
             }
 
-            statusBar.innerText = "捕獲成功！太棒了！👏";
+            statusBar.innerText = "太棒了！寫對了！👏";
             
             setTimeout(() => {
                 currentStep++;
@@ -646,9 +818,9 @@
 
             setTimeout(() => {
                 guideTrack.style.transition = 'none';
-                guideTrack.style.strokeDasharray = '4 6';
+                guideTrack.style.strokeDasharray = '6 8';
                 guideTrack.setAttribute('stroke', '#729fcf');
-                guideTrack.style.opacity = '0.3';
+                guideTrack.style.opacity = '0.4';
                 renderCurrentStep();
             }, 900);
         }
