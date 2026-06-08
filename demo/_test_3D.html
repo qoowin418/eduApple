@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D 多形狀互動實驗室 (純靜態原生網頁)</title>
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+            background-color: #1e1e24; /* 改用深色網頁背景，讓 3D 物體高光更明顯 */
+            color: #eeeeee;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .main-container {
+            background-color: #2a2a35;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex;
+            gap: 30px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        /* 畫布包裝區 */
+        .canvas-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #3dCanvas {
+            border: 2px solid #444454;
+            border-radius: 12px;
+            background-color: #111116; /* 畫布背景為極深色，模擬夜空/太空格調 */
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        }
+
+        .hint-text {
+            color: #888899;
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+
+        /* 控制面板區 */
+        .controls-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            max-height: 550px;
+            overflow-y: auto; /* 若控制項太多，允許面板內部捲動 */
+            padding-right: 10px;
+        }
+
+        h2 {
+            margin: 0 0 10px 0;
+            font-size: 1.4rem;
+            color: #4dabf7;
+            border-bottom: 2px solid #444454;
+            padding-bottom: 8px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #cbd5e1;
+        }
+
+        /* 下拉選單與數值滑塊樣式自訂 */
+        select, input[type="range"] {
+            width: 100%;
+            padding: 8px;
+            background-color: #1e1e24;
+            border: 1px solid #444454;
+            border-radius: 6px;
+            color: white;
+            box-sizing: border-box;
+        }
+
+        input[type="range"] {
+            padding: 0;
+            height: 6px;
+            cursor: pointer;
+        }
+
+        input[type="color"] {
+            border: none;
+            width: 100%;
+            height: 35px;
+            cursor: pointer;
+            border-radius: 6px;
+            background: none;
+        }
+
+        .value-num {
+            font-size: 0.8rem;
+            color: #10b981; /* 綠色高亮數字 */
+            text-align: right;
+            margin-top: -2px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        
+        <div class="canvas-container">
+            <canvas id="3dCanvas" width="450" height="450"></canvas>
+            <p class="hint-text">【動態提示】3D 頂點正自動繞 X、Y 軸旋轉中</p>
+        </div>
+
+        <div class="controls-panel">
+            <h2>3D 參數主控台</h2>
+
+            <div class="control-group">
+                <label for="shapeSelect">切換 3D 形狀</label>
+                <select id="shapeSelect">
+                    <option value="sphere">3D 球體 (Sphere)</option>
+                    <option value="ellipsoid">3D 橢圓體 (Ellipsoid)</option>
+                    <option value="cube">3D 正方體 (Cube)</option>
+                    <option value="rect">3D 長方體 (Rectangle Prism)</option>
+                    <option value="pyramid">3D 多邊形角錐體 (Pyramid)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="sizeSlider">基礎主尺寸 (半徑/邊長)</label>
+                <input type="range" id="sizeSlider" min="30" max="150" value="80">
+                <div class="value-num" id="sizeVal">80</div>
+            </div>
+
+            <div class="control-group">
+                <label for="colorPicker">著色主題顏色</label>
+                <input type="color" id="colorPicker" value="#3b82f6">
+            </div>
+
+            <div class="control-group">
+                <label for="xSlider">空間 X 軸偏移 (左右位置)</label>
+                <input type="range" id="xSlider" min="50" max="400" value="225">
+                <div class="value-num" id="xVal">225</div>
+            </div>
+
+            <div class="control-group">
+                <label for="ySlider">空間 Y 軸偏移 (上下位置)</label>
+                <input type="range" id="ySlider" min="50" max="400" value="225">
+                <div class="value-num" id="yVal">225</div>
+            </div>
+
+            <div class="control-group">
+                <label for="zSlider">空間 Z 軸深度 (深度景深影響)</label>
+                <input type="range" id="zSlider" min="-150" max="150" value="0">
+                <div class="value-num" id="zVal">0</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ----------------------------------------------------------
+        // 1. 全域變數與環境配置
+        // ----------------------------------------------------------
+        const canvas = document.getElementById('3dCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // 主資料狀態機（State Object）：集中管理使用者的互動參數
+        let config = {
+            shape: 'sphere',       // 當前形狀
+            baseSize: 80,          // 主半徑/邊長尺寸
+            color: '#3b82f6',      // 網頁色彩代碼
+            offsetX: 225,          // 投影中心 X
+            offsetY: 225,          // 投影中心 Y
+            offsetZ: 0,            // 虛擬 Z 深度的偏移量
+            angleX: 0,             // 當前 X 軸旋轉弧度
+            angleY: 0,             // 當前 Y 軸旋轉弧度
+            rotSpeedX: 0.008,      // 自轉速度 X
+            rotSpeedY: 0.012       // 自轉速度 Y
+        };
+
+        // ----------------------------------------------------------
+        // 2. 獲取 UI 節點並與事件綁定 (Data Binding)
+        // ----------------------------------------------------------
+        const UI = {
+            shape: document.getElementById('shapeSelect'),
+            size: document.getElementById('sizeSlider'),
+            color: document.getElementById('colorPicker'),
+            xPos: document.getElementById('xSlider'),
+            yPos: document.getElementById('ySlider'),
+            zPos: document.getElementById('zSlider'),
+            // 數值顯示文字標籤
+            lblSize: document.getElementById('sizeVal'),
+            lblX: document.getElementById('xVal'),
+            lblY: document.getElementById('yVal'),
+            lblZ: document.getElementById('zVal')
+        };
+
+        // 監聽函數：更新數值並即時變更 config 狀態
+        UI.shape.addEventListener('change', (e) => config.shape = e.target.value);
+        UI.size.addEventListener('input', (e) => { config.baseSize = parseInt(e.target.value); UI.lblSize.textContent = e.target.value; });
+        UI.color.addEventListener('input', (e) => config.color = e.target.value);
+        UI.xPos.addEventListener('input', (e) => { config.offsetX = parseInt(e.target.value); UI.lblX.textContent = e.target.value; });
+        UI.yPos.addEventListener('input', (e) => { config.offsetY = parseInt(e.target.value); UI.lblY.textContent = e.target.value; });
+        UI.zPos.addEventListener('input', (e) => { config.offsetZ = parseInt(e.target.value); UI.lblZ.textContent = e.target.value; });
+
+
+        // ----------------------------------------------------------
+        // 3. 核心 3D 數學運算工具 (Mathematics Engine)
+        // ----------------------------------------------------------
+        
+        /**
+         * 3D 空間坐標旋轉函數 (使用尤拉角矩陣原理)
+         * @param {Object} point 包含 {x, y, z} 的原始點
+         * @param {number} ax X軸旋轉角度
+         * @param {number} ay Y軸旋轉角度
+         * @returns {Object} 旋轉後的新 {x, y, z} 坐標
+         */
+        function rotate3DPoint(point, ax, ay) {
+            // 先繞 X 軸旋轉
+            let cosX = Math.cos(ax), sinX = Math.sin(ax);
+            let y1 = point.y * cosX - point.z * sinX;
+            let z1 = point.y * sinX + point.z * cosX;
+
+            // 再繞 Y 軸旋轉
+            let cosY = Math.cos(ay), sinY = Math.sin(ay);
+            let x2 = point.x * cosY + z1 * sinY;
+            let z2 = -point.x * sinY + z1 * cosY;
+
+            return { x: x2, y: y1, z: z2 };
+        }
+
+        /**
+         * 透視投影將 3D 坐標轉換為 2D 螢幕像素點 (Perspective Projection)
+         * @param {Object} pt 3D 坐標
+         * @returns {Object} 2D 畫布坐標 {x, y} 加上尺寸縮放係數
+         */
+        function project(pt) {
+            const d = 400; // 虛擬相機焦距 (焦距越大，透視變形越小)
+            // 將物體自身的 z 加上互動面板傳入的 offsetZ，並計算投影係數
+            const zWorld = pt.z + config.offsetZ + 300; // +300 防止 z 軸小於 0 跑到相機後方
+            
+            const scale = d / Math.max(1, zWorld); 
+            return {
+                x: pt.x * scale + config.offsetX,
+                y: pt.y * scale + config.offsetY,
+                scale: scale // 用於點的大小或線條深淺的參考
+            };
+        }
+
+        // ----------------------------------------------------------
+        // 4. 3D 形狀生成器 (幾何頂點與連線資料)
+        // ----------------------------------------------------------
+        
+        // 獲取球體和橢圓體的三維點陣列 (經緯度法)
+        function getSpherePoints(isEllipsoid = false) {
+            let points = [];
+            let r = config.baseSize;
+            let totalLines = 12; // 經緯度經線緯線圈數量
+            
+            for (let i = 0; i <= totalLines; i++) {
+                let lat = (Math.PI * i) / totalLines - Math.PI / 2; // 緯度 (-90 ~ 90度)
+                for (let j = 0; j < totalLines * 2; j++) {
+                    let lon = (Math.PI * 2 * j) / (totalLines * 2); // 經度 (0 ~ 360度)
+                    
+                    // 基礎球體參數方程
+                    let px = r * Math.cos(lat) * Math.cos(lon);
+                    let py = r * Math.sin(lat);
+                    let pz = r * Math.cos(lat) * Math.sin(lon);
+
+                    // 關鍵擴充：若是橢圓體，人為壓縮 Y 軸與擴張 X 軸
+                    if (isEllipsoid) {
+                        px *= 1.4; // 橫向拉長
+                        py *= 0.6; // 縱向壓扁
+                    }
+                    points.push({ x: px, y: py, z: pz });
+                }
+            }
+            return points;
+        }
+
+        // 獲取立方體(方體與長方體)的 8 個頂點與 12 條稜線結構
+        function getBoxGeometry(isRect = false) {
+            let s = config.baseSize;
+            let w = s, h = s, d = s;
+
+            if (isRect) {
+                w *= 1.6; // 長方體寬度
+                h *= 0.7; // 長方體高度
+                d *= 1.0; // 長方體深度
+            }
+
+            // 定義 8 個立體頂點
+            let vertices = [
+                {x: -w, y: -h, z: -d}, {x: w, y: -h, z: -d}, {x: w, y: h, z: -d}, {x: -w, y: h, z: -d},
+                {x: -w, y: -h, z: d},  {x: w, y: -h, z: d},  {x: w, y: h, z: d},  {x: -w, y: h, z: d}
+            ];
+
+            // 定義 12 條邊線的連線規則 (頂點索引)
+            let edges = [
+                [0,1], [1,2], [2,3], [3,0], // 後表面四邊
+                [4,5], [5,6], [6,7], [7,4], // 前表面四邊
+                [0,4], [1,5], [2,6], [3,7]  // 前後連線
+            ];
+            return { vertices, edges };
+        }
+
+        // 獲取多邊形錐體 (以五角錐為例，可隨意擴充底邊數)
+        function getPyramidGeometry() {
+            let r = config.baseSize * 1.2; // 底面半徑
+            let h = config.baseSize * 1.5; // 錐體高度
+            let sides = 5; // 五角錐
+            let vertices = [];
+            let edges = [];
+
+            // 1. 產生頂點 (頂尖點位於上方中央)
+            vertices.push({ x: 0, y: -h, z: 0 }); // 索引 0
+
+            // 2. 產生底面多邊形頂點
+            for (let i = 0; i < sides; i++) {
+                let angle = (Math.PI * 2 * i) / sides;
+                vertices.push({
+                    x: r * Math.cos(angle),
+                    y: h / 2, // 底面位於下方
+                    z: r * Math.sin(angle)
+                });
+            }
+
+            // 3. 連線：建立錐體側面稜線 (頂點連到底面各點)
+            for (let i = 1; i <= sides; i++) {
+                edges.push([0, i]);
+            }
+            // 4. 連線：建立底面多邊形封閉圈
+            for (let i = 1; i <= sides; i++) {
+                let next = (i === sides) ? 1 : i + 1;
+                edges.push([i, next]);
+            }
+
+            return { vertices, edges };
+        }
+
+        // ----------------------------------------------------------
+        // 5. 渲染引擎主循環 (Render Loop)
+        // ----------------------------------------------------------
+        function drawFrame() {
+            // Step 5.1: 清空畫布，重置每一影格
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Step 5.2: 更新自動旋轉增量角度
+            config.angleX += config.rotSpeedX;
+            config.angleY += config.rotSpeedY;
+
+            // 十六進位色彩轉 RGBA 工具（以便做線條透明度淡化效果）
+            const hexToRgb = hex => hex.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i,(m, r, g, b) => '#' + r + r + g + g + b + b).substring(1).match(/.{2}/g).map(x => parseInt(x, 16));
+            const [rgbR, rgbG, rgbB] = hexToRgb(config.color);
+
+            // 根據使用者的選擇，進入不同的渲染分支
+            if (config.shape === 'sphere' || config.shape === 'ellipsoid') {
+                // ==================== [球體 / 橢圓體 渲染模式] ====================
+                let isEllipsoid = (config.shape === 'ellipsoid');
+                let points = getSpherePoints(isEllipsoid);
+
+                // 遍歷所有 3D 幾何點，旋轉、投影、並繪製出點矩陣群
+                points.forEach(pt => {
+                    let rotated = rotate3DPoint(pt, config.angleX, config.angleY);
+                    let projected = project(rotated);
+
+                    // 根據 Z 軸深淺動態計算點的渲染大小及透明度 (產生前後空間感)
+                    let dotSize = Math.max(0.5, 2.5 * (projected.scale / 1.5));
+                    let alpha = Math.min(1, Math.max(0.1, projected.scale - 0.3));
+
+                    ctx.beginPath();
+                    ctx.arc(projected.x, projected.y, dotSize, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${rgbR}, ${rgbG}, ${rgbB}, ${alpha})`;
+                    ctx.fill();
+                });
+
+            } else {
+                // ==================== [多邊形 / 框線類 渲染模式] ====================
+                let geo;
+                if (config.shape === 'cube') geo = getBoxGeometry(false);
+                if (config.shape === 'rect') geo = getBoxGeometry(true);
+                if (config.shape === 'pyramid') geo = getPyramidGeometry();
+
+                // 先行將所有立體頂點進行矩陣旋轉與 2D 投影
+                let projectedVertices = geo.vertices.map(v => {
+                    let rot = rotate3DPoint(v, config.angleX, config.angleY);
+                    return project(rot);
+                });
+
+                // 根據連線索引表 (Edges Array)，依次在畫布上連線
+                geo.edges.forEach(edge => {
+                    let p1 = projectedVertices[edge[0]];
+                    let p2 = projectedVertices[edge[1]];
+
+                    // 計算線條兩端的平均深度，用來淡化後方骨架線條
+                    let avgScale = (p1.scale + p2.scale) / 2;
+                    let alpha = Math.min(1, Math.max(0.15, avgScale - 0.4));
+
+                    ctx.beginPath();
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(p2.x, p2.y);
+                    ctx.strokeStyle = `rgba(${rgbR}, ${rgbG}, ${rgbB}, ${alpha})`;
+                    ctx.lineWidth = Math.max(1, 2 * (avgScale / 1.3)); // 越近的線越粗
+                    ctx.stroke();
+                });
+            }
+
+            // 呼叫瀏覽器原生高效動畫幀，持續自我調用產生 60FPS 動態效果
+            requestAnimationFrame(drawFrame);
+        }
+
+        // ----------------------------------------------------------
+        // 6. 專案初始化啟動
+        // ----------------------------------------------------------
+        drawFrame();
+    </script>
+</body>
+</html>
