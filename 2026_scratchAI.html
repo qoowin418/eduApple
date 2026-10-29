@@ -22,6 +22,17 @@
   <h1>scratchAI培訓</h1>
 
   <!-- 將 href 裡面的網址換成影片網址，並修改前面的影片標題。 -->
-  <p>115-1_20261028(三)隨機垃圾：<a href="https://youtu.be/AYRD8oXbSno">觀看影片</a></p>
+<p>
+  <span>115-1_20261028(三)隨機垃圾</span>：
+  <a href="https://youtu.be/AYRD8oXbSno"
+     onclick="gtag('event', 'yt_video_click', {
+       video_id: '001',
+       video_title: this.parentElement.querySelector('span').textContent.trim(),
+       link_url: this.href
+     });">觀看影片</a>
+</p>
+
+
+
 </body>
 </html>
